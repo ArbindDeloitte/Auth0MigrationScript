@@ -1,11 +1,53 @@
 const { getRedisConnection } = require('../redis');
 const logger = require('../logger');
 
-// Redis key where populated users are stored as JSON strings in a List
-// Populate with: RPUSH migration:source:users '{"email":"...","name":"..."}'
+// Redis key where source users are stored as JSON strings in a List.
+// Expected record shape:
+//   { first_name, last_name, email, password_hash, language_preference, uid }
+// Populate with: RPUSH migration:source:users '{"email":"...","uid":"...","first_name":"...",...}'
 const SOURCE_KEY = process.env.REDIS_SOURCE_KEY || 'migration:source:users';
 const OFFSET_KEY = 'migration:source:offset';
 const BATCH_SIZE = 500;
+
+// Maps a raw source record (OUD/LADWP format) to the Auth0 user import shape.
+// Source fields: first_name, last_name, email, password_hash, language_preference, uid
+function mapSourceToAuth0(record) {
+  const firstName = (record.first_name || '').trim();
+  const lastName = (record.last_name || '').trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+
+  const user = {
+    email: record.email,
+    email_verified: false,
+  };
+
+  if (firstName) user.given_name = firstName;
+  if (lastName) user.family_name = lastName;
+  if (fullName) user.name = fullName;
+
+  // UID is stored as Auth0 username (must be unique per connection)
+  if (record.uid) user.username = String(record.uid);
+
+  // password_hash: pass through as custom_password_hash.
+  // If the ETL already produced a structured object, use it directly;
+  // otherwise wrap the raw hash string in the Auth0 sha512 envelope.
+  if (record.password_hash) {
+    user.custom_password_hash =
+      typeof record.password_hash === 'object'
+        ? record.password_hash
+        : {
+            algorithm: 'sha512',
+            hash: { value: record.password_hash, encoding: 'base64' },
+          };
+  }
+
+  // Language preference stored as user_metadata so it is accessible post-migration
+  if (record.language_preference) {
+    user.user_metadata = { language: record.language_preference };
+  }
+
+  return user;
+}
 
 class RedisDataService {
   get redis() {
@@ -46,20 +88,24 @@ class RedisDataService {
       const rawItems = await this.redis.lrange(SOURCE_KEY, offset, end);
 
       for (const raw of rawItems) {
-        let user;
+        let record;
         try {
-          user = JSON.parse(raw);
+          record = JSON.parse(raw);
         } catch {
           logger.warn('Skipping malformed user record in Redis', { raw: raw.slice(0, 100) });
           continue;
         }
 
-        if (!user.email) {
-          logger.warn('Skipping user record missing email', { record: user });
+        if (!record.email) {
+          logger.warn('Skipping user record missing email', { record });
           continue;
         }
 
-        yield user;
+        if (!record.uid) {
+          logger.warn('User record missing uid — username will be omitted', { email: record.email });
+        }
+
+        yield mapSourceToAuth0(record);
       }
 
       offset = end + 1;
@@ -127,3 +173,4 @@ async function createChunksFromRedis(chunksDir) {
 
 module.exports = instance;
 module.exports.createChunksFromRedis = createChunksFromRedis;
+module.exports.mapSourceToAuth0 = mapSourceToAuth0;

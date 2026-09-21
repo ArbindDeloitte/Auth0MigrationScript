@@ -8,10 +8,10 @@ const logger = require('../logger');
 // Columns written to the manual review Excel file
 const COLUMNS = [
   { header: 'Email', key: 'email', width: 36 },
-  { header: 'Name', key: 'name', width: 24 },
-  { header: 'Given Name', key: 'given_name', width: 18 },
-  { header: 'Family Name', key: 'family_name', width: 18 },
-  { header: 'Phone Number', key: 'phone_number', width: 18 },
+  { header: 'Username (UID)', key: 'username', width: 20 },
+  { header: 'First Name', key: 'given_name', width: 18 },
+  { header: 'Last Name', key: 'family_name', width: 18 },
+  { header: 'Language Preference', key: 'language_preference', width: 20 },
   { header: 'Email Verified', key: 'email_verified', width: 14 },
   { header: 'User Metadata', key: 'user_metadata', width: 40 },
   { header: 'App Metadata', key: 'app_metadata', width: 40 },
@@ -67,10 +67,10 @@ class FailedUserService {
       for (const user of users) {
         sheet.addRow({
           email: user.email || '',
-          name: user.name || '',
+          username: user.username || '',
           given_name: user.given_name || '',
           family_name: user.family_name || '',
-          phone_number: user.phone_number || '',
+          language_preference: user.user_metadata?.language || '',
           email_verified: user.email_verified !== undefined ? String(user.email_verified) : '',
           user_metadata: user.user_metadata ? JSON.stringify(user.user_metadata) : '',
           app_metadata: user.app_metadata ? JSON.stringify(user.app_metadata) : '',

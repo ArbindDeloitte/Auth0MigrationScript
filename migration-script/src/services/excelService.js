@@ -6,16 +6,40 @@ const config = require('../config');
 const logger = require('../logger');
 
 function rowToAuth0User(rowObj) {
+  // Support both new column names (first_name, last_name, uid, language_preference, password_hash)
+  // and legacy names (given_name, family_name) so older Excel inputs still work.
+  const firstName = (rowObj['first_name'] || rowObj['given_name'] || '').trim();
+  const lastName = (rowObj['last_name'] || rowObj['family_name'] || '').trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+
   const user = {
     email: rowObj['email'],
     email_verified: rowObj['email_verified'] === true || rowObj['email_verified'] === 'true',
-    name: rowObj['name'] || undefined,
-    given_name: rowObj['given_name'] || undefined,
-    family_name: rowObj['family_name'] || undefined,
-    phone_number: rowObj['phone_number'] || undefined,
   };
 
-  if (rowObj['user_metadata']) {
+  if (firstName) user.given_name = firstName;
+  if (lastName) user.family_name = lastName;
+  if (fullName) user.name = fullName;
+
+  // UID maps to Auth0 username
+  const uid = rowObj['uid'] || rowObj['username'];
+  if (uid) user.username = String(uid);
+
+  // password_hash: wrap string in Auth0 custom_password_hash envelope;
+  // pass objects (already-structured ETL output) straight through.
+  const rawHash = rowObj['password_hash'];
+  if (rawHash) {
+    user.custom_password_hash =
+      typeof rawHash === 'object'
+        ? rawHash
+        : { algorithm: 'sha512', hash: { value: rawHash, encoding: 'base64' } };
+  }
+
+  // Language preference goes into user_metadata
+  const lang = rowObj['language_preference'];
+  if (lang) {
+    user.user_metadata = { language: lang };
+  } else if (rowObj['user_metadata']) {
     try {
       user.user_metadata = JSON.parse(rowObj['user_metadata']);
     } catch {

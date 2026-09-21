@@ -69,16 +69,28 @@ Compare two LDIF snapshots at least 7 days apart, filter for mapped attribute ch
 | Job data TTL | 24 hours | Not reached due to 2h cap |
 | Per-user retry threshold | 3 (configurable) | After 3 failures → manual-review.xlsx |
 
-## OUD Attribute Mapping (to be confirmed with OUD admin)
-| OUD Attribute | Auth0 Field | Notes |
+## Source Record → Auth0 Attribute Mapping
+Redis source records use these fields (set by the ETL):
+
+| Source Field (Redis JSON) | Auth0 Field | Notes |
 |---|---|---|
-| `mail` | `email` | Required |
-| `givenName` | `given_name` | |
-| `sn` | `family_name` | |
-| `cn` | `name` | Full name |
-| `telephoneNumber` | `phone_number` | |
-| `userPassword` | `custom_password_hash` | SSHA512 decode required |
-| `pwdAccountLockedTime` | `blocked` | If present = true |
+| `email` | `email` | Required |
+| `uid` | `username` | Used as the Auth0 username; must be unique per connection |
+| `first_name` | `given_name` | |
+| `last_name` | `family_name` | |
+| `first_name` + `last_name` | `name` | Concatenated; computed by migration script |
+| `password_hash` | `custom_password_hash` | Base64-encoded SHA-512 hash string, or ETL-structured `{ algorithm, hash, salt }` object |
+| `language_preference` | `user_metadata.language` | e.g. `"en"`, `"es"` |
+
+### Legacy OUD → ETL mapping (for reference)
+| OUD LDAP Attribute | Redis source field |
+|---|---|
+| `mail` | `email` |
+| `givenName` | `first_name` |
+| `sn` | `last_name` |
+| `uid` | `uid` |
+| `userPassword` (SSHA512) | `password_hash` (decoded by ETL) |
+| `preferredLanguage` | `language_preference` |
 
 ## OUD Admin Confirmations Required
 1. Is `modifyTimestamp` enabled and populated on all user entries?
