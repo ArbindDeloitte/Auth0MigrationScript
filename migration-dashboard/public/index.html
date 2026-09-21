@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Auth0 Migration Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── Tokens ─────────────────────────────────────────────────────── */
+:root {
+  --sidebar-bg:    #0D1B2A;
+  --sidebar-hover: #162535;
+  --sidebar-active:#1B3A5C;
+  --sidebar-text:  #8FA8C4;
+  --sidebar-hi:    #60A5FA;
+  --sidebar-logo:  #FFFFFF;
+
+  --bg:      #EFF2F7;
+  --surface: #FFFFFF;
+  --surface2:#F5F7FA;
+  --border:  #E1E7EF;
+
+  --text:    #1C2B3A;
+  --text-2:  #5A6E82;
+  --text-3:  #8FA3B1;
+
+  --blue:    #2563EB;
+  --blue-lt: #EFF6FF;
+  --green:   #059669;
+  --green-lt:#ECFDF5;
+  --amber:   #D97706;
+  --amber-lt:#FFFBEB;
+  --red:     #DC2626;
+  --red-lt:  #FEF2F2;
+  --purple:  #7C3AED;
+  --purple-lt:#F5F3FF;
+
+  --radius:  8px;
+  --shadow:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:      #0A1628;
+    --surface: #122035;
+    --surface2:#192C42;
+    --border:  #1E3352;
+    --text:    #E2ECF7;
+    --text-2:  #8BADC8;
+    --text-3:  #5A7A96;
+    --blue-lt: #1E3352;
+    --green-lt:#0D2E20;
+    --amber-lt:#2E1E0A;
+    --red-lt:  #2E1010;
+    --purple-lt:#1E1035;
+    --shadow:  0 1px 3px rgba(0,0,0,.25);
+    --shadow-md: 0 4px 16px rgba(0,0,0,.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:      #0A1628;
+  --surface: #122035;
+  --surface2:#192C42;
+  --border:  #1E3352;
+  --text:    #E2ECF7;
+  --text-2:  #8BADC8;
+  --text-3:  #5A7A96;
+  --blue-lt: #1E3352;
+  --green-lt:#0D2E20;
+  --amber-lt:#2E1E0A;
+  --red-lt:  #2E1010;
+  --purple-lt:#1E1035;
+}
+
+/* ── Reset / base ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: 1fr;
+  min-height: 100%;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────── */
+.sidebar {
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar-logo {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+.sidebar-logo .logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: var(--blue);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-icon svg { width: 18px; height: 18px; }
+.logo-text { font-size: 13px; font-weight: 700; color: var(--sidebar-logo); line-height: 1.2; }
+.logo-sub  { font-size: 10px; font-weight: 500; color: var(--sidebar-text); text-transform: uppercase; letter-spacing: .06em; }
+
+.sidebar-status {
+  padding: 10px 16px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sidebar-text);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #6B7280;
+  flex-shrink: 0;
+  transition: background .3s;
+}
+.live-dot.live   { background: #10B981; animation: pulse-dot 2s infinite; }
+.live-dot.error  { background: #EF4444; }
+@keyframes pulse-dot {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.6; transform:scale(1.3); }
+}
+
+.sidebar-nav { flex: 1; padding: 10px 0; overflow-y: auto; }
+.nav-section { padding: 0 8px 4px; }
+.nav-label {
+  padding: 6px 12px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sidebar-text);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  opacity: .6;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--sidebar-text);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background .15s, color .15s;
+  margin-bottom: 1px;
+  user-select: none;
+}
+.nav-item:hover  { background: var(--sidebar-hover); color: #CBD5E1; }
+.nav-item.active { background: var(--sidebar-active); color: var(--sidebar-hi); }
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: rgba(239,68,68,.2);
+  color: #FCA5A5;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+.nav-badge.zero { background: rgba(255,255,255,.06); color: var(--sidebar-text); }
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-size: 11px;
+  color: var(--sidebar-text);
+  opacity: .5;
+}
+
+/* ── Main ────────────────────────────────────────────────────────── */
+.main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+.view { display: none; padding: 28px 32px 40px; }
+.view.active { display: block; }
+
+/* ── Page headers ────────────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-title { font-size: 20px; font-weight: 700; color: var(--text); }
+.page-meta  { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.page-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+/* ── Status badge ────────────────────────────────────────────────── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  border: 1px solid transparent;
+}
+.status-badge.running   { background: var(--green-lt);  color: var(--green);  border-color: #A7F3D0; }
+.status-badge.completed { background: var(--blue-lt);   color: var(--blue);   border-color: #BFDBFE; }
+.status-badge.idle      { background: var(--surface2);  color: var(--text-2); border-color: var(--border); }
+.status-badge.error     { background: var(--red-lt);    color: var(--red);    border-color: #FECACA; }
+.status-badge.paused    { background: var(--amber-lt);  color: var(--amber);  border-color: #FDE68A; }
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity .15s, transform .1s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { opacity: .88; }
+.btn-ghost { background: var(--surface); color: var(--text-2); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--surface2); }
+.btn svg { width: 14px; height: 14px; }
+
+/* ── KPI tiles ───────────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--kpi-color, var(--blue));
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.kpi-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.kpi-value { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.kpi-sub   { font-size: 12px; color: var(--text-2); }
+.kpi-icon  {
+  position: absolute;
+  top: 18px; right: 18px;
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--kpi-bg, var(--blue-lt));
+}
+.kpi-icon svg { width: 18px; height: 18px; color: var(--kpi-color, var(--blue)); }
+
+/* ── Progress section ────────────────────────────────────────────── */
+.progress-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.progress-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+.progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.progress-title  { font-size: 13px; font-weight: 600; color: var(--text); }
+.progress-pct    { font-size: 20px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.progress-track  { background: var(--surface2); border-radius: 6px; height: 8px; overflow: hidden; margin-bottom: 6px; }
+.progress-fill   {
+  height: 100%; border-radius: 6px;
+  background: linear-gradient(90deg, var(--pfill-a, #2563EB), var(--pfill-b, #60A5FA));
+  transition: width .6s ease;
+}
+.progress-detail { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+/* ── Chart card ──────────────────────────────────────────────────── */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.chart-title  { font-size: 14px; font-weight: 600; color: var(--text); }
+.chart-meta   { font-size: 12px; color: var(--text-3); }
+.chart-wrap   { position: relative; height: 160px; }
+
+/* ── Queue health ────────────────────────────────────────────────── */
+.queue-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.queue-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+.queue-name   { font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.queue-active { font-size: 24px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; margin-bottom: 2px; }
+.queue-active-lbl { font-size: 11px; color: var(--text-3); margin-bottom: 10px; }
+.queue-stats  { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+.qstat-item   { display: flex; flex-direction: column; }
+.qstat-label  { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; }
+.qstat-value  { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.qstat-value.ok  { color: var(--green); }
+.qstat-value.warn { color: var(--amber); }
+.qstat-value.err  { color: var(--red); }
+
+/* ── Bottom stats row ────────────────────────────────────────────── */
+.bottom-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+.info-card-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.info-card-val   { font-size: 18px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.info-card-sub   { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+/* ── Data browser ────────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+.search-icon {
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+}
+.search-icon svg { width: 14px; height: 14px; display: block; }
+input[type="text"], input[type="email"], select {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s;
+}
+input[type="text"]:focus, input[type="email"]:focus, select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+}
+.filter-group { display: flex; gap: 4px; }
+.filter-btn {
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  transition: all .15s;
+}
+.filter-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+/* ── Table ───────────────────────────────────────────────────────── */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+tbody td { padding: 10px 14px; color: var(--text); vertical-align: middle; }
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-imported { background: var(--green-lt); color: var(--green); }
+.badge-pending  { background: var(--surface2); color: var(--text-3); }
+.badge-error    { background: var(--red-lt); color: var(--red); }
+.text-muted { color: var(--text-3); font-style: italic; }
+.table-empty { padding: 48px 20px; text-align: center; color: var(--text-3); }
+.table-empty-icon { font-size: 36px; margin-bottom: 8px; }
+.table-empty-text { font-size: 14px; }
+
+/* ── Pagination ──────────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+.page-info { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.page-btns { display: flex; gap: 4px; }
+.page-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  transition: all .15s;
+  min-width: 32px;
+  text-align: center;
+}
+.page-btn:hover:not(:disabled) { background: var(--surface2); }
+.page-btn.current { background: var(--blue); color: #fff; border-color: var(--blue); }
+.page-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ── Modal ───────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.hidden { display: none; }
+.modal {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.modal-close {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: var(--surface2);
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  transition: background .15s;
+}
+.modal-close:hover { background: var(--border); }
+.modal-body { padding: 20px 24px; }
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 5px;
+}
+.form-label .req { color: var(--red); margin-left: 2px; }
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s;
+}
+.form-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.form-hint { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--text);
+  color: var(--surface);
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow-md);
+  z-index: 2000;
+  animation: toast-in .25s ease;
+  max-width: 320px;
+}
+.toast.success { background: var(--green); }
+.toast.error   { background: var(--red); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  body { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .queue-grid { grid-template-columns: 1fr; }
+  .bottom-stats { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .view { padding: 16px; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .progress-grid { grid-template-columns: 1fr; }
+  .bottom-stats { grid-template-columns: 1fr; }
+}
+
+/* ── Misc ────────────────────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); margin: 0 -20px 20px; }
+.text-right { text-align: right; }
+.flex-gap { display: flex; gap: 8px; align-items: center; }
+select.no-pl { padding-left: 10px; }
+.search-input { padding-left: 34px; }
+</style>
+</head>
+<body>
+
+<!-- ─── Sidebar ───────────────────────────────────────────────────── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-text">Migration</div>
+        <div class="logo-sub">Auth0 CIAM</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-status">
+    <div class="live-badge">
+      <span class="live-dot" id="live-dot"></span>
+      <span id="live-label">Connecting…</span>
+    </div>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-label">Monitoring</div>
+      <div class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/>
+          <rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>
+        </svg>
+        Dashboard
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Data</div>
+      <div class="nav-item" data-view="data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+        Source Records
+      </div>
+      <div class="nav-item" data-view="review">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        Manual Review
+        <span class="nav-badge zero" id="nav-review-badge">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">LADWP · Auth0 Migration</div>
+</nav>
+
+<!-- ─── Main ──────────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- ── Dashboard view ─────────────────────────────────────────── -->
+  <div id="view-dashboard" class="view active">
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Migration Dashboard</div>
+        <div class="page-meta" id="dash-last-refresh">Last updated: —</div>
+      </div>
+      <div class="page-actions">
+        <span class="status-badge idle" id="status-badge">idle</span>
+        <button class="btn btn-ghost" onclick="refreshDashboard()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card" style="--kpi-color:#2563EB;--kpi-bg:#EFF6FF">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <div class="kpi-label">Total Source Users</div>
+        <div class="kpi-value" id="kpi-total">—</div>
+        <div class="kpi-sub">Redis list length</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-color:#059669;--kpi-bg:#ECFDF5">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="kpi-label">Users Read</div>
+        <div class="kpi-value" id="kpi-read">—</div>
+        <div class="kpi-sub" id="kpi-read-sub">0% of total</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-color:#7C3AED;--kpi-bg:#F5F3FF">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          </svg>
+        </div>
+        <div class="kpi-label">Chunks Processed</div>
+        <div class="kpi-value" id="kpi-chunks">—</div>
+        <div class="kpi-sub" id="kpi-chunks-sub">of 0 total chunks</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-color:#D97706;--kpi-bg:#FFFBEB">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div class="kpi-label">Import Rate</div>
+        <div class="kpi-value" id="kpi-rate">0</div>
+        <div class="kpi-sub">users / minute</div>
+      </div>
+    </div>
+
+    <!-- Progress bars -->
+    <div class="progress-grid">
+      <div class="progress-card">
+        <div class="progress-header">
+          <div class="progress-title">Source Reading Progress</div>
+          <div class="progress-pct" id="prog-read-pct">0%</div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="prog-read-bar" style="--pfill-a:#2563EB;--pfill-b:#60A5FA;width:0%"></div>
+        </div>
+        <div class="progress-detail" id="prog-read-detail">0 of 0 users batched into chunks</div>
+      </div>
+
+      <div class="progress-card">
+        <div class="progress-header">
+          <div class="progress-title">Chunk Import Progress</div>
+          <div class="progress-pct" id="prog-chunk-pct">0%</div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="prog-chunk-bar" style="--pfill-a:#7C3AED;--pfill-b:#A78BFA;width:0%"></div>
+        </div>
+        <div class="progress-detail" id="prog-chunk-detail">0 of 0 chunks submitted to Auth0</div>
+      </div>
+    </div>
+
+    <!-- Rate chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Import Rate — Users per Minute</div>
+        <div class="chart-meta" id="chart-meta">Tracking every 10s · last 30 readings</div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="rate-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Queue health -->
+    <div class="queue-grid">
+      <div class="queue-card">
+        <div class="queue-name">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          Import Queue
+        </div>
+        <div class="queue-active" id="q-import-active">0</div>
+        <div class="queue-active-lbl">active jobs</div>
+        <div class="queue-stats">
+          <div class="qstat-item">
+            <span class="qstat-label">Waiting</span>
+            <span class="qstat-value" id="q-import-waiting">0</span>
+          </div>
+          <div class="qstat-item">
+            <span class="qstat-label">Delayed</span>
+            <span class="qstat-value warn" id="q-import-delayed">0</span>
+          </div>
+          <div class="qstat-item">
+            <span class="qstat-label">Completed</span>
+            <span class="qstat-value ok" id="q-import-completed">0</span>
+          </div>
+          <div class="qstat-item">
+            <span class="qstat-label">Failed</span>
+            <span class="qstat-value err" id="q-import-failed">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="queue-card">
+        <div class="queue-name">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Status Queue
+        </div>
+        <div class="queue-active" id="q-status-active">0</div>
+        <div class="queue-active-lbl">active polls</div>
+        <div class="queue-stats">
+          <div class="qstat-item">
+            <span class="qstat-label">Waiting</span>
+            <span class="qstat-value" id="q-status-waiting">0</span>
+          </div>
+          <div class="qstat-item">
+            <span class="qstat-label">Delayed</span>
+            <span class="qstat-value warn" id="q-status-delayed">0</span>
+          </div>
+          <div class="qstat-item">
+            <span class="qstat-label">Completed</span>
+            <span class="qstat-value ok" id="q-status-completed">0</span>
+          </div>
+          <div class="qstat-item">
+            <span class="qstat-label">Failed</span>
+            <span class="qstat-value err" id="q-status-failed">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="queue-card">
+        <div class="queue-name">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-3.36"/>
+          </svg>
+          Retry Queue
+        </div>
+        <div class="queue-active" id="q-retry-active">0</div>
+        <div class="queue-active-lbl">active retries</div>
+        <div class="queue-stats">
+          <div class="qstat-item">
+            <span class="qstat-label">Waiting</span>
+            <span class="qstat-value" id="q-retry-waiting">0</span>
+          </div>
+          <div class="qstat-item">
+            <span class="qstat-label">Delayed</span>
+            <span class="qstat-value warn" id="q-retry-delayed">0</span>
+          </div>
+          <div class="qstat-item">
+            <span class="qstat-label">Completed</span>
+            <span class="qstat-value ok" id="q-retry-completed">0</span>
+          </div>
+          <div class="qstat-item">
+            <span class="qstat-label">Failed</span>
+            <span class="qstat-value err" id="q-retry-failed">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom stats -->
+    <div class="bottom-stats">
+      <div class="info-card">
+        <div class="info-card-label">Manual Review</div>
+        <div class="info-card-val" id="kpi-manual">0</div>
+        <div class="info-card-sub">users flagged for review</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Est. Time Remaining</div>
+        <div class="info-card-val" id="kpi-eta">—</div>
+        <div class="info-card-sub">at current rate</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Status Updated</div>
+        <div class="info-card-val" id="kpi-status-ts" style="font-size:14px">—</div>
+        <div class="info-card-sub">last migration status change</div>
+      </div>
+    </div>
+
+  </div><!-- /view-dashboard -->
+
+  <!-- ── Data Browser view ───────────────────────────────────────── -->
+  <div id="view-data" class="view">
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Source Records</div>
+        <div class="page-meta" id="data-total-label">Loading…</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add User
+        </button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input type="text" class="search-input" id="data-search" placeholder="Search by email, UID, name…" oninput="debounceSearch()" autocomplete="off">
+      </div>
+      <div class="filter-group">
+        <button class="filter-btn active" data-filter="all"      onclick="setFilter(this)">All</button>
+        <button class="filter-btn"        data-filter="imported" onclick="setFilter(this)">Imported</button>
+        <button class="filter-btn"        data-filter="pending"  onclick="setFilter(this)">Pending</button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Email</th>
+              <th>UID</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Language</th>
+              <th>Password</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="data-tbody">
+            <tr><td colspan="8" class="table-empty"><div class="table-empty-text">Loading records…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pagination">
+      <div class="page-info" id="data-page-info">—</div>
+      <div class="page-btns" id="data-page-btns"></div>
+    </div>
+
+  </div><!-- /view-data -->
+
+  <!-- ── Manual Review view ─────────────────────────────────────── -->
+  <div id="view-review" class="view">
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Manual Review</div>
+        <div class="page-meta" id="review-total-label">Users that could not be auto-imported</div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Email</th>
+              <th>Username (UID)</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Language</th>
+              <th>Failure Reason</th>
+              <th>Added At</th>
+            </tr>
+          </thead>
+          <tbody id="review-tbody">
+            <tr><td colspan="8" class="table-empty"><div class="table-empty-text">Loading…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pagination">
+      <div class="page-info" id="review-page-info">—</div>
+      <div class="page-btns" id="review-page-btns"></div>
+    </div>
+
+  </div><!-- /view-review -->
+
+</main>
+
+<!-- ─── Add User Modal ─────────────────────────────────────────────── -->
+<div id="modal-add-user" class="modal-overlay hidden" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Source User</span>
+      <button class="modal-close" onclick="closeAddModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email <span class="req">*</span></label>
+          <input class="form-input" type="email" id="add-email" placeholder="jane.doe@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">UID <span class="req">*</span></label>
+          <input class="form-input" type="text" id="add-uid" placeholder="jdoe001">
+          <div class="form-hint">Becomes Auth0 username</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input class="form-input" type="text" id="add-first" placeholder="Jane">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input class="form-input" type="text" id="add-last" placeholder="Doe">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Language Preference</label>
+        <input class="form-input" type="text" id="add-lang" placeholder="en">
+        <div class="form-hint">e.g. en, es, zh, fr, de</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password Hash (base64 SSHA-512)</label>
+        <input class="form-input" type="text" id="add-hash" placeholder="Optional — leave blank if none">
+        <div class="form-hint">Base64-encoded SHA-512 hash from OUD export</div>
+      </div>
+      <div id="add-error" style="color:var(--red);font-size:12px;margin-top:6px;display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAddModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAddUser()" id="add-submit-btn">Add to Redis</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let currentView   = 'dashboard';
+let dataPage      = 1;
+let dataFilter    = 'all';
+let searchTerm    = '';
+let reviewPage    = 1;
+let rateChart     = null;
+
+// For UPM calculation in the browser
+const rateHistory  = [];   // {t, upm}
+const MAX_HIST     = 30;
+let   lastOffset   = null;
+let   lastOffsetTs = null;
+
+// Debounce handle
+let searchTimeout = null;
+
+// ── Init ───────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initChart();
+  connectSSE();
+  fetchStats();
+  setInterval(fetchStats, 30_000);
+
+  // Nav click handlers
+  document.querySelectorAll('.nav-item[data-view]').forEach(el => {
+    el.addEventListener('click', () => switchView(el.dataset.view));
+  });
+});
+
+// ── Navigation ─────────────────────────────────────────────────────
+function switchView(name) {
+  if (currentView === name) return;
+  currentView = name;
+
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelector(`.nav-item[data-view="${name}"]`).classList.add('active');
+
+  if (name === 'data')   { dataPage = 1; fetchUsers(); }
+  if (name === 'review') { reviewPage = 1; fetchReview(); }
+}
+
+// ── SSE live connection ─────────────────────────────────────────────
+function connectSSE() {
+  const es = new EventSource('/api/events');
+  const dot = document.getElementById('live-dot');
+  const lbl = document.getElementById('live-label');
+
+  es.onopen = () => {
+    dot.className = 'live-dot live';
+    lbl.textContent = 'Live';
+  };
+
+  es.onmessage = (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      // Lightweight update without full re-render
+      updateKPIQuick(d);
+    } catch { /* ignore */ }
+  };
+
+  es.onerror = () => {
+    dot.className = 'live-dot error';
+    lbl.textContent = 'Disconnected';
+    es.close();
+    // Reconnect after 15s
+    setTimeout(connectSSE, 15_000);
+  };
+}
+
+function updateKPIQuick(d) {
+  if (!d) return;
+  const { source, chunks, rate, status } = d;
+
+  if (source) {
+    setText('kpi-total', fmt(source.total));
+    setText('kpi-read',  fmt(source.read));
+    const pct = source.total > 0 ? ((source.read / source.total) * 100).toFixed(1) : '0.0';
+    setText('kpi-read-sub', pct + '% of total');
+    setText('prog-read-pct', pct + '%');
+    setBar('prog-read-bar', parseFloat(pct));
+    setText('prog-read-detail', fmt(source.read) + ' of ' + fmt(source.total) + ' users batched into chunks');
+  }
+
+  if (chunks) {
+    setText('kpi-chunks', fmt(chunks.processed));
+    setText('kpi-chunks-sub', 'of ' + fmt(chunks.total) + ' total chunks');
+    const cp = chunks.total > 0 ? ((chunks.processed / chunks.total) * 100).toFixed(1) : '0.0';
+    setText('prog-chunk-pct', cp + '%');
+    setBar('prog-chunk-bar', parseFloat(cp));
+    setText('prog-chunk-detail', fmt(chunks.processed) + ' of ' + fmt(chunks.total) + ' chunks submitted to Auth0');
+  }
+
+  if (rate) {
+    const upm = rate.usersPerMinute || 0;
+    recordRate(source?.read, upm);
+    setText('kpi-rate', fmt(upm));
+  }
+
+  if (status) updateStatusBadge(status);
+}
+
+function recordRate(offset, upm) {
+  const now = Date.now();
+  if (offset !== undefined && lastOffset !== null && lastOffsetTs !== null) {
+    const dt = now - lastOffsetTs;
+    const do_ = offset - lastOffset;
+    if (dt > 0 && do_ >= 0) {
+      const computed = Math.round((do_ / dt) * 60_000);
+      rateHistory.push({ t: now, upm: computed });
+      if (rateHistory.length > MAX_HIST) rateHistory.shift();
+      pushChartPoint(now, computed);
+    }
+  }
+  if (offset !== undefined) { lastOffset = offset; lastOffsetTs = now; }
+  // If no delta yet (first reading), still push the server-reported rate
+  if (rateHistory.length === 0 && upm > 0) {
+    rateHistory.push({ t: now, upm });
+    pushChartPoint(now, upm);
+  }
+}
+
+// ── Full stats fetch ────────────────────────────────────────────────
+async function fetchStats() {
+  try {
+    const r = await fetch('/api/stats');
+    if (!r.ok) return;
+    const d = await r.json();
+    renderDashboard(d);
+  } catch { /* ignore */ }
+}
+
+function refreshDashboard() { fetchStats(); }
+
+function renderDashboard(d) {
+  const { source, chunks, status, statusUpdatedAt, manualReviewCount, queues, rate } = d;
+
+  // KPIs
+  setText('kpi-total', fmt(source.total));
+  setText('kpi-read',  fmt(source.read));
+  setText('kpi-read-sub', source.readPercent + '% of total');
+  setText('kpi-chunks', fmt(chunks.processed));
+  setText('kpi-chunks-sub', 'of ' + fmt(chunks.total) + ' total chunks');
+
+  const upm = rate.usersPerMinute || 0;
+  setText('kpi-rate', fmt(upm));
+  recordRate(source.read, upm);
+
+  // Progress bars
+  setText('prog-read-pct', source.readPercent + '%');
+  setBar('prog-read-bar', source.readPercent);
+  setText('prog-read-detail', fmt(source.read) + ' of ' + fmt(source.total) + ' users batched into chunks');
+
+  setText('prog-chunk-pct', chunks.processedPercent + '%');
+  setBar('prog-chunk-bar', chunks.processedPercent);
+  setText('prog-chunk-detail', fmt(chunks.processed) + ' of ' + fmt(chunks.total) + ' chunks submitted to Auth0');
+
+  // Status
+  updateStatusBadge(status);
+
+  // Queues
+  const q = queues || {};
+  renderQueue('import', q.import);
+  renderQueue('status', q.status);
+  renderQueue('retry',  q.retry);
+
+  // Bottom stats
+  const mrCount = manualReviewCount || 0;
+  setText('kpi-manual', fmt(mrCount));
+  const reviewBadge = document.getElementById('nav-review-badge');
+  reviewBadge.textContent = mrCount > 0 ? mrCount : '0';
+  reviewBadge.className = 'nav-badge' + (mrCount > 0 ? '' : ' zero');
+
+  setText('kpi-eta', rate.etaMinutes != null ? fmtDuration(rate.etaMinutes) : '—');
+  setText('kpi-status-ts', statusUpdatedAt ? new Date(statusUpdatedAt).toLocaleString() : '—');
+
+  setText('dash-last-refresh', 'Last updated: ' + new Date().toLocaleTimeString());
+}
+
+function updateStatusBadge(status) {
+  const el = document.getElementById('status-badge');
+  el.textContent = status || 'idle';
+  el.className = 'status-badge ' + (status || 'idle');
+}
+
+function renderQueue(name, counts) {
+  const c = counts || {};
+  setText(`q-${name}-active`,    fmt(c.active    || 0));
+  setText(`q-${name}-waiting`,   fmt(c.waiting   || 0));
+  setText(`q-${name}-delayed`,   fmt(c.delayed   || 0));
+  setText(`q-${name}-completed`, fmt(c.completed || 0));
+  setText(`q-${name}-failed`,    fmt(c.failed    || 0));
+}
+
+// ── Chart ───────────────────────────────────────────────────────────
+function initChart() {
+  const ctx = document.getElementById('rate-chart').getContext('2d');
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+  const textColor = isDark ? '#8BADC8' : '#8FA3B1';
+
+  rateChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels:   [],
+      datasets: [{
+        label: 'Users/min',
+        data: [],
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59,130,246,.12)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#3B82F6',
+        fill: true,
+        tension: 0.4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ' ' + fmt(ctx.raw) + ' users/min',
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColor },
+          ticks: { color: textColor, maxTicksLimit: 8, font: { size: 11 } },
+        },
+        y: {
+          grid: { color: gridColor },
+          ticks: { color: textColor, font: { size: 11 }, callback: (v) => fmt(v) },
+          beginAtZero: true,
+        }
+      }
+    }
+  });
+}
+
+function pushChartPoint(timestamp, upm) {
+  if (!rateChart) return;
+  const label = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  rateChart.data.labels.push(label);
+  rateChart.data.datasets[0].data.push(upm);
+  if (rateChart.data.labels.length > MAX_HIST) {
+    rateChart.data.labels.shift();
+    rateChart.data.datasets[0].data.shift();
+  }
+  rateChart.update('none');
+}
+
+// ── Data Browser ────────────────────────────────────────────────────
+async function fetchUsers() {
+  document.getElementById('data-tbody').innerHTML =
+    '<tr><td colspan="8" class="table-empty"><div class="table-empty-text">Loading…</div></td></tr>';
+  try {
+    const params = new URLSearchParams({
+      page: dataPage, limit: 20, filter: dataFilter,
+    });
+    if (searchTerm) params.set('search', searchTerm);
+    const r = await fetch('/api/users?' + params);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    renderUsersTable(d);
+  } catch (e) {
+    document.getElementById('data-tbody').innerHTML =
+      `<tr><td colspan="8" class="table-empty"><div class="table-empty-text">Error: ${e.message}</div></td></tr>`;
+  }
+}
+
+function renderUsersTable(d) {
+  const { total, page, limit, totalPages, users, readOffset, searchLimited } = d;
+  const start = (page - 1) * limit;
+
+  setText('data-total-label',
+    searchTerm
+      ? `${fmt(total)} results${searchLimited ? ' (search limited to first 10k records)' : ''}`
+      : `${fmt(total)} total records · ${fmt(readOffset)} imported`
+  );
+
+  if (!users || users.length === 0) {
+    document.getElementById('data-tbody').innerHTML =
+      '<tr><td colspan="8" class="table-empty"><div class="table-empty-icon">📭</div><div class="table-empty-text">No records found</div></td></tr>';
+    setText('data-page-info', '');
+    document.getElementById('data-page-btns').innerHTML = '';
+    return;
+  }
+
+  const rows = users.map((u, i) => {
+    if (u._error) {
+      return `<tr>
+        <td class="text-muted">${start + i + 1}</td>
+        <td colspan="7" class="text-muted mono">${esc(u._raw || 'Parse error')}</td>
+      </tr>`;
+    }
+    const badge = u._imported
+      ? '<span class="badge badge-imported">Imported</span>'
+      : '<span class="badge badge-pending">Pending</span>';
+    return `<tr>
+      <td class="text-muted mono" style="font-size:11px">${(u._index + 1).toLocaleString()}</td>
+      <td class="mono">${esc(u.email || '')}</td>
+      <td class="mono">${esc(u.uid   || '')}</td>
+      <td>${esc(u.first_name || '')}</td>
+      <td>${esc(u.last_name  || '')}</td>
+      <td><span style="font-size:12px">${esc(u.language_preference || '')}</span></td>
+      <td class="text-muted" style="font-size:11px">${u.password_hash ? u.password_hash : '<span class="text-muted">—</span>'}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('data-tbody').innerHTML = rows;
+  setText('data-page-info', `Showing ${start + 1}–${Math.min(start + users.length, total)} of ${fmt(total)}`);
+  renderPagination('data-page-btns', page, totalPages, (p) => { dataPage = p; fetchUsers(); });
+}
+
+function setFilter(btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  dataFilter = btn.dataset.filter;
+  dataPage = 1;
+  fetchUsers();
+}
+
+function debounceSearch() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    searchTerm = document.getElementById('data-search').value.trim();
+    dataPage = 1;
+    fetchUsers();
+  }, 400);
+}
+
+// ── Manual Review ───────────────────────────────────────────────────
+async function fetchReview() {
+  document.getElementById('review-tbody').innerHTML =
+    '<tr><td colspan="8" class="table-empty"><div class="table-empty-text">Loading…</div></td></tr>';
+  try {
+    const r = await fetch(`/api/manual-review?page=${reviewPage}&limit=20`);
+    const d = await r.json();
+    renderReviewTable(d);
+  } catch (e) {
+    document.getElementById('review-tbody').innerHTML =
+      `<tr><td colspan="8" class="table-empty"><div class="table-empty-text">Error: ${e.message}</div></td></tr>`;
+  }
+}
+
+function renderReviewTable(d) {
+  const { total, page, limit, totalPages, users } = d;
+  const start = (page - 1) * limit;
+
+  setText('review-total-label', fmt(total) + ' users flagged for manual review');
+
+  if (!users || users.length === 0) {
+    document.getElementById('review-tbody').innerHTML =
+      '<tr><td colspan="8" class="table-empty"><div class="table-empty-icon">✅</div><div class="table-empty-text">No users in manual review — great!</div></td></tr>';
+    setText('review-page-info', '');
+    document.getElementById('review-page-btns').innerHTML = '';
+    return;
+  }
+
+  const rows = users.map((u, i) => {
+    const addedAt = u.added_at ? new Date(u.added_at).toLocaleString() : '—';
+    return `<tr>
+      <td class="text-muted mono" style="font-size:11px">${start + i + 1}</td>
+      <td class="mono">${esc(u.email || '')}</td>
+      <td class="mono">${esc(u.username || '')}</td>
+      <td>${esc(u.given_name  || '')}</td>
+      <td>${esc(u.family_name || '')}</td>
+      <td>${esc(u.language_preference || '')}</td>
+      <td style="font-size:12px;color:var(--red)">${esc(u.failure_reason || '')}</td>
+      <td style="font-size:11px;color:var(--text-3)">${addedAt}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('review-tbody').innerHTML = rows;
+  setText('review-page-info', `Showing ${start + 1}–${Math.min(start + users.length, total)} of ${fmt(total)}`);
+  renderPagination('review-page-btns', page, totalPages, (p) => { reviewPage = p; fetchReview(); });
+}
+
+// ── Pagination ──────────────────────────────────────────────────────
+function renderPagination(containerId, current, total, onPage) {
+  if (total <= 1) { document.getElementById(containerId).innerHTML = ''; return; }
+
+  let btns = '';
+  btns += `<button class="page-btn" onclick="(${onPage.toString()})(${current - 1})" ${current === 1 ? 'disabled' : ''}>‹</button>`;
+
+  const pages = visiblePages(current, total);
+  let prev = null;
+  for (const p of pages) {
+    if (prev !== null && p - prev > 1) btns += `<button class="page-btn" disabled>…</button>`;
+    btns += `<button class="page-btn ${p === current ? 'current' : ''}" onclick="(${onPage.toString()})(${p})">${p}</button>`;
+    prev = p;
+  }
+
+  btns += `<button class="page-btn" onclick="(${onPage.toString()})(${current + 1})" ${current === total ? 'disabled' : ''}>›</button>`;
+  document.getElementById(containerId).innerHTML = btns;
+}
+
+function visiblePages(current, total) {
+  const pages = new Set([1, total]);
+  for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) pages.add(i);
+  return Array.from(pages).sort((a, b) => a - b);
+}
+
+// ── Add User Modal ──────────────────────────────────────────────────
+function openAddModal() {
+  clearAddForm();
+  document.getElementById('modal-add-user').classList.remove('hidden');
+  document.getElementById('add-email').focus();
+}
+
+function closeAddModal() {
+  document.getElementById('modal-add-user').classList.add('hidden');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-add-user')) closeAddModal();
+}
+
+function clearAddForm() {
+  ['add-email','add-uid','add-first','add-last','add-lang','add-hash'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  const errEl = document.getElementById('add-error');
+  errEl.style.display = 'none';
+  errEl.textContent = '';
+}
+
+async function submitAddUser() {
+  const email  = document.getElementById('add-email').value.trim();
+  const uid    = document.getElementById('add-uid').value.trim();
+  const first  = document.getElementById('add-first').value.trim();
+  const last   = document.getElementById('add-last').value.trim();
+  const lang   = document.getElementById('add-lang').value.trim();
+  const hash   = document.getElementById('add-hash').value.trim();
+
+  const errEl = document.getElementById('add-error');
+  errEl.style.display = 'none';
+
+  if (!email) { showAddError('Email is required'); return; }
+  if (!uid)   { showAddError('UID is required');   return; }
+
+  const btn = document.getElementById('add-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Adding…';
+
+  try {
+    const body = { email, uid };
+    if (first) body.first_name         = first;
+    if (last)  body.last_name          = last;
+    if (lang)  body.language_preference = lang;
+    if (hash)  body.password_hash       = hash;
+
+    const r = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+
+    if (!r.ok || d.error) throw new Error(d.error || 'Failed to add user');
+
+    closeAddModal();
+    showToast(`User ${email} added · Total: ${fmt(d.total)}`, 'success');
+    if (currentView === 'data') fetchUsers();
+    fetchStats();
+  } catch (e) {
+    showAddError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add to Redis';
+  }
+}
+
+function showAddError(msg) {
+  const el = document.getElementById('add-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ── Toast notifications ─────────────────────────────────────────────
+function showToast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Utilities ───────────────────────────────────────────────────────
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function setBar(id, pct) {
+  const el = document.getElementById(id);
+  if (el) el.style.width = Math.min(100, Math.max(0, pct)) + '%';
+}
+
+function fmt(n) {
+  if (n == null || isNaN(n)) return '0';
+  return Number(n).toLocaleString();
+}
+
+function fmtDuration(minutes) {
+  if (!minutes || minutes <= 0) return '< 1 min';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return m + 'm';
+  return h + 'h ' + m + 'm';
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>
