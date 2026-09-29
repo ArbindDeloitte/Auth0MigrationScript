@@ -10,11 +10,14 @@ const QUEUE = {
 
 // BullMQ requires separate IORedis connections for queue producers and workers —
 // a shared connection can deadlock because workers use BLPOP which blocks the connection.
+// auth0Service handles 429 internally with up to 8 retries respecting Retry-After.
+// These BullMQ retries are a final safety net for network drops or Auth0 outages.
+// Base delay 60s → 60s, 120s, 240s, 480s, 960s across 5 attempts.
 const importQueue = new Queue(QUEUE.IMPORT, {
   connection: createRedisConnection(),
   defaultJobOptions: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000 },
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 60_000 },
     removeOnComplete: { count: 200 },
     removeOnFail: { count: 500 },
   },

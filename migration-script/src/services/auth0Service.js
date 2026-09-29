@@ -4,6 +4,21 @@ const fs = require('fs');
 const config = require('../config');
 const logger = require('../logger');
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Respect Auth0's Retry-After / x-ratelimit-reset header; default 60s
+function parseRetryAfterMs(headers = {}) {
+  const ra = headers['retry-after'];
+  if (ra) {
+    const n = Number(ra);
+    // Retry-After can be seconds or an HTTP-date epoch
+    return n > 1_000_000 ? (n - Date.now()) : n * 1_000;
+  }
+  const reset = headers['x-ratelimit-reset'];
+  if (reset) return Math.max(0, Number(reset) * 1_000 - Date.now());
+  return 60_000; // fallback
+}
+
 class Auth0Service {
   constructor() {
     this._token = null;
@@ -34,30 +49,52 @@ class Auth0Service {
   }
 
   async createImportJob(chunkFilePath, { upsert = true, externalId } = {}) {
-    const token = await this._getToken();
-    const form = new FormData();
+    const MAX_RATE_LIMIT_RETRIES = 8;
 
-    form.append('users', fs.createReadStream(chunkFilePath), {
-      filename: 'users.json',
-      contentType: 'application/json',
-    });
-    form.append('connection_id', config.auth0.connectionId);
-    form.append('upsert', String(upsert));
-    form.append('send_completion_email', 'false');
-    if (externalId) form.append('external_id', externalId);
+    for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
+      const token = await this._getToken();
+      const form = new FormData();
 
-    const response = await axios.post(
-      `https://${config.auth0.domain}/api/v2/jobs/users-imports`,
-      form,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          ...form.getHeaders(),
-        },
+      form.append('users', fs.createReadStream(chunkFilePath), {
+        filename: 'users.json',
+        contentType: 'application/json',
+      });
+      form.append('connection_id', config.auth0.connectionId);
+      form.append('upsert', String(upsert));
+      form.append('send_completion_email', 'false');
+      if (externalId) form.append('external_id', externalId);
+
+      try {
+        const response = await axios.post(
+          `https://${config.auth0.domain}/api/v2/jobs/users-imports`,
+          form,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              ...form.getHeaders(),
+            },
+          }
+        );
+        return response.data; // { id, type, status, connection_id, external_id, ... }
+      } catch (err) {
+        if (err.response?.status === 429 && attempt < MAX_RATE_LIMIT_RETRIES) {
+          const waitMs = parseRetryAfterMs(err.response.headers);
+          // Add ±10% jitter to avoid thundering herd when multiple workers hit the limit
+          const jitter = Math.floor(waitMs * 0.1 * Math.random());
+          const delay = Math.max(waitMs + jitter, 10_000); // never wait less than 10s
+          logger.warn(`Auth0 rate limit (429) on createImportJob — waiting ${Math.round(delay / 1000)}s before retry`, {
+            attempt: attempt + 1,
+            maxRetries: MAX_RATE_LIMIT_RETRIES,
+            externalId,
+            retryAfterMs: waitMs,
+          });
+          await sleep(delay);
+          // Continue to next loop iteration (re-creates form with fresh stream)
+        } else {
+          throw err;
+        }
       }
-    );
-
-    return response.data; // { id, type, status, connection_id, external_id, ... }
+    }
   }
 
   async getJobStatus(jobId) {

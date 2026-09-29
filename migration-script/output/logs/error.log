@@ -1,0 +1,204 @@
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.694Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.701Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.703Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.704Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.706Z"}
+{"error":"read ECONNRESET","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:03:59.708Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.709Z"}
+{"error":"read ECONNRESET","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:03:59.716Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.718Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.761Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.782Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.783Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:03:59.785Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.786Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:03:59.787Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.788Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.789Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.790Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.870Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.905Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.906Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.907Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.907Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:03:59.908Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.909Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:03:59.909Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:03:59.910Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.039Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.072Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.073Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:00.075Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.077Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:00.078Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.079Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.080Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.080Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.256Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.292Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.293Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.293Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.294Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:00.294Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.294Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:00.295Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.295Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.520Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.552Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.552Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:00.553Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.553Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:00.553Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.553Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.554Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.554Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.832Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.864Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.865Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.865Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.866Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:00.866Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.866Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:00.866Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:00.867Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.190Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.223Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.223Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:01.223Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.224Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:01.224Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.224Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.224Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.224Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.596Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.630Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.630Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.630Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.631Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:01.631Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.631Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:01.631Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:01.631Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.049Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.099Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.100Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:02.100Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.100Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:02.100Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.101Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.101Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.101Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.565Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.614Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.614Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.614Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.615Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:02.615Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.615Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:02.615Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:02.616Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.127Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.175Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.176Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:03.176Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.177Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:03.177Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.178Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.179Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.180Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.737Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.787Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.787Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.788Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.788Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:03.788Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.788Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:03.789Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:03.789Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:04.398Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:04.446Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:04.447Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:04.447Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:04.447Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:04.447Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:04.448Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:04.448Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:04.448Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.101Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.168Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.169Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.170Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.170Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:05.170Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.171Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:05.171Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.171Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.867Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.928Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.929Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:05.929Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.930Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:05.930Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.930Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.931Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:05.931Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:06.676Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:06.742Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:06.742Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:06.743Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:06.743Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:06.743Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:06.744Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:06.744Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:06.745Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:07.532Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:07.599Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:07.600Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[retry] Worker error","timestamp":"2026-09-29T16:04:07.600Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:07.601Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"[import] Worker error","timestamp":"2026-09-29T16:04:07.601Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:07.601Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:07.602Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T16:04:07.603Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.204Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.207Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.208Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.211Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.212Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.213Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.264Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.270Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.271Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.271Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.272Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.273Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.372Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.376Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.377Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.377Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.377Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.378Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.527Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.546Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.547Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.548Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.548Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T17:55:14.549Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.619Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.620Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.621Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.622Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.623Z"}
+{"error":"read ECONNRESET","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.623Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.687Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.688Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.688Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.688Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.689Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.689Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.799Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.800Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.801Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.801Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.802Z"}
+{"error":"connect ECONNREFUSED 127.0.0.1:6379","level":"error","message":"Redis connection error","timestamp":"2026-09-29T18:02:58.803Z"}

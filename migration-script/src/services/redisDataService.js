@@ -9,6 +9,49 @@ const SOURCE_KEY = process.env.REDIS_SOURCE_KEY || 'migration:source:users';
 const OFFSET_KEY = 'migration:source:offset';
 const BATCH_SIZE = 500;
 
+// LDAP hash prefix → { auth0Algorithm, hashBytes, salted }
+// hashBytes = fixed digest length in bytes; salted = digest || salt blob after stripping prefix
+const LDAP_HASH_FORMATS = {
+  '{SHA}':     { algorithm: 'sha1',   hashBytes: 20, salted: false },
+  '{SSHA}':    { algorithm: 'sha1',   hashBytes: 20, salted: true  },
+  '{SHA256}':  { algorithm: 'sha256', hashBytes: 32, salted: false },
+  '{SSHA256}': { algorithm: 'sha256', hashBytes: 32, salted: true  },
+  '{SHA512}':  { algorithm: 'sha512', hashBytes: 64, salted: false },
+  '{SSHA512}': { algorithm: 'sha512', hashBytes: 64, salted: true  },
+};
+
+// Parses any supported LDAP password hash string into the Auth0 custom_password_hash shape.
+// Salted formats (SSHA*): base64blob decodes to digest_bytes || salt_bytes.
+// Auth0 requires digest and salt as separate base64 values.
+function parseLdapPasswordHash(raw) {
+  const upperRaw = raw.toUpperCase();
+  const key = Object.keys(LDAP_HASH_FORMATS).find(k => upperRaw.startsWith(k));
+
+  if (!key) {
+    // Unknown prefix — pass the value through as-is and let Auth0 reject it with a real error
+    return { algorithm: 'sha512', hash: { value: raw, encoding: 'base64' } };
+  }
+
+  const { algorithm, hashBytes, salted } = LDAP_HASH_FORMATS[key];
+  const b64 = raw.slice(key.length);
+  const buf  = Buffer.from(b64, 'base64');
+
+  if (!salted) {
+    return {
+      algorithm,
+      hash: { value: buf.toString('base64'), encoding: 'base64' },
+    };
+  }
+
+  const hash = buf.slice(0, hashBytes);
+  const salt = buf.slice(hashBytes);
+  return {
+    algorithm,
+    hash: { value: hash.toString('base64'), encoding: 'base64' },
+    salt: { value: salt.toString('base64'), position: 'suffix', encoding: 'base64' },
+  };
+}
+
 // Maps a raw source record (OUD/LADWP format) to the Auth0 user import shape.
 // Source fields: first_name, last_name, email, password_hash, language_preference, uid
 function mapSourceToAuth0(record) {
@@ -28,22 +71,23 @@ function mapSourceToAuth0(record) {
   // UID is stored as Auth0 username (must be unique per connection)
   if (record.uid) user.username = String(record.uid);
 
-  // password_hash: pass through as custom_password_hash.
-  // If the ETL already produced a structured object, use it directly;
-  // otherwise wrap the raw hash string in the Auth0 sha512 envelope.
+  // password_hash: map to Auth0 custom_password_hash.
+  // If the ETL already produced a structured object, use it directly.
+  // Otherwise parse the LDAP prefix (SHA/SSHA/SHA256/SSHA256/SHA512/SSHA512).
   if (record.password_hash) {
+    const raw = record.password_hash;
     user.custom_password_hash =
-      typeof record.password_hash === 'object'
-        ? record.password_hash
-        : {
-            algorithm: 'sha512',
-            hash: { value: record.password_hash, encoding: 'base64' },
-          };
+      typeof raw === 'object' ? raw : parseLdapPasswordHash(raw);
   }
 
   // Language preference stored as user_metadata so it is accessible post-migration
   if (record.language_preference) {
     user.user_metadata = { language: record.language_preference };
+  }
+
+  // requireEmailChange flagged users get it recorded in app_metadata
+  if (record.requireEmailChange === true) {
+    user.app_metadata = { requireEmailChange: true };
   }
 
   return user;
@@ -69,6 +113,12 @@ class RedisDataService {
 
   async resetOffset() {
     await this.redis.del(OFFSET_KEY);
+  }
+
+  // Reads a slice of the source list without advancing the offset checkpoint.
+  // Used by gap recovery to scan for users not yet in Auth0 or manual review.
+  async getSourceUsersBatch(start, count) {
+    return this.redis.lrange(SOURCE_KEY, start, start + count - 1);
   }
 
   // Streams users from the Redis list in batches starting from saved offset.

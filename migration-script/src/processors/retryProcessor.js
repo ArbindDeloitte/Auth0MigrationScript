@@ -1,18 +1,19 @@
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const auth0Service = require('../services/auth0Service');
+'use strict';
 const checkpointService = require('../services/checkpointService');
 const failedUserService = require('../services/failedUserService');
-const { statusQueue } = require('../queues');
+const { flushRetryStagingBatch, RETRY_BATCH_SIZE } = require('../services/retryBatchService');
 const config = require('../config');
 const logger = require('../logger');
 
 async function retryProcessor(job) {
-  const { user, failureReason, chunkId } = job.data;
+  const { user, failureReason } = job.data;
 
-  // Use email as the retry-count key; fall back to a stable hash if no email
+  // Use email as the retry-count key; fall back to stringified user if no email.
   const userKey = user.email || JSON.stringify(user);
+
+  // Increment per-user retry count — this is the source of truth for escalation.
+  // Incremented here, before staging, so the count is always accurate even if the
+  // process crashes between staging and batch submission.
   const retryCount = await checkpointService.incrementUserRetryCount(userKey);
 
   logger.info('Retry attempt for user', {
@@ -27,40 +28,39 @@ async function retryProcessor(job) {
       userKey,
       retryCount,
     });
-    await failedUserService.appendUsers([user], `Exceeded ${config.migration.maxUserRetries} retries. Last reason: ${failureReason}`);
+    await failedUserService.appendUsers(
+      [user],
+      `Exceeded ${config.migration.maxUserRetries} retries. Last reason: ${failureReason}`
+    );
     return { status: 'manual-review', userKey };
   }
 
-  // Create a single-user chunk file and upload it as a fresh Auth0 import job
-  const retryChunkId = uuidv4();
-  const tmpPath = path.join(config.migration.chunksDir, `retry-${retryChunkId}.json`);
-  fs.writeFileSync(tmpPath, JSON.stringify([user]), 'utf-8');
+  // Stage the user for batch processing instead of creating a single-user Auth0 job.
+  // pushToRetryStaging returns the new list length after the push.
+  const stagingCount = await checkpointService.pushToRetryStaging(user);
 
-  let auth0Job;
-  try {
-    auth0Job = await auth0Service.createImportJob(tmpPath, {
-      upsert: true,
-      externalId: `retry-${retryChunkId}`,
-    });
-  } catch (err) {
-    logger.error('Retry upload to Auth0 failed', { userKey, error: err.message });
-    throw err;
-  } finally {
-    try { fs.unlinkSync(tmpPath); } catch (_) {}
+  logger.info('User staged for batch retry', { userKey, retryCount, stagingCount });
+
+  // Trigger a batch flush once the staging list has enough users for a full batch.
+  if (stagingCount >= RETRY_BATCH_SIZE) {
+    try {
+      const result = await flushRetryStagingBatch();
+      if (result) {
+        logger.info('Retry batch submitted to Auth0', {
+          batchChunkId: result.batchChunkId,
+          userCount: result.userCount,
+        });
+      }
+      // result === null means a concurrent worker already flushed — that is fine.
+    } catch (err) {
+      logger.error('Retry batch flush failed', { error: err.message });
+      // Non-fatal: users remain in staging list or in the chunk file.
+      // The next retryProcessor invocation or the final flush in waitForCompletion
+      // will pick them up.
+    }
   }
 
-  logger.info('Retry job created in Auth0', { auth0JobId: auth0Job.id, userKey, retryChunkId });
-
-  await checkpointService.storeAuth0JobId(retryChunkId, auth0Job.id);
-  // Pass the user object so statusProcessor can escalate to manual review if the
-  // retry job fails — the temp file is deleted above and can't be re-read later.
-  await statusQueue.add(
-    'poll-status',
-    { chunkId: retryChunkId, auth0JobId: auth0Job.id, attempts: 0, isRetry: true, user },
-    { delay: config.migration.statusPollIntervalMs }
-  );
-
-  return { status: 'retrying', auth0JobId: auth0Job.id, retryCount };
+  return { status: 'staged', userKey, retryCount, stagingCount };
 }
 
 module.exports = retryProcessor;

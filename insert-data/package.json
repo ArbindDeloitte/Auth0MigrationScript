@@ -1,0 +1,17 @@
+{
+  "name": "insert-data",
+  "version": "1.0.0",
+  "description": "Stream CSV files into Redis for Auth0 migration",
+  "main": "insert-csv.js",
+  "scripts": {
+    "start": "node insert-csv.js"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.0",
+    "dotenv": "^16.3.1",
+    "ioredis": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

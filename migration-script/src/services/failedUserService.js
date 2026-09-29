@@ -4,6 +4,7 @@ const ExcelJS = require('exceljs');
 const lockfile = require('proper-lockfile');
 const config = require('../config');
 const logger = require('../logger');
+const checkpointService = require('./checkpointService');
 
 // Columns written to the manual review Excel file
 const COLUMNS = [
@@ -63,6 +64,14 @@ class FailedUserService {
       await workbook.xlsx.readFile(this.filePath);
       const sheet = workbook.getWorksheet('Manual Review');
 
+      // xlsx format does not persist ExcelJS column `key` properties — they are
+      // in-memory only. Without re-applying them here, addRow({email, username, ...})
+      // finds no column with any key and silently writes an empty row.
+      COLUMNS.forEach((colDef, i) => {
+        const col = sheet.getColumn(i + 1);
+        col.key = colDef.key;
+      });
+
       const addedAt = new Date().toISOString();
       for (const user of users) {
         sheet.addRow({
@@ -94,6 +103,20 @@ class FailedUserService {
       });
     } finally {
       if (release) await release();
+    }
+
+    // Mirror emails to the Redis SET so gap detection can quickly determine
+    // whether a source user is in manual review without reading the Excel file.
+    // Called outside the lockfile scope so the lock is released first.
+    try {
+      const emails = users.map(u => u.email).filter(Boolean);
+      if (emails.length > 0) {
+        await checkpointService.recordManualReviewUsers(emails);
+      }
+    } catch (redisErr) {
+      // Non-fatal: the Excel file is the source of truth. Gap detection will
+      // still work via retryCount checks on the next startup.
+      logger.warn('Could not record manual review users in Redis', { error: redisErr.message });
     }
   }
 

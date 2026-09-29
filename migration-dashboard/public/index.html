@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <style>
 /* ── Tokens ─────────────────────────────────────────────────────── */
 :root {
@@ -267,7 +268,7 @@ body {
 /* ── KPI tiles ───────────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -462,6 +463,21 @@ tbody tr {
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--surface2); }
 tbody td { padding: 10px 14px; color: var(--text); vertical-align: middle; }
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+th.sortable:hover { color: var(--blue); }
+th.sortable .si {
+  display: inline-block;
+  margin-left: 4px;
+  opacity: 0.35;
+  font-size: 10px;
+  font-style: normal;
+}
+th.sortable.sort-asc  .si,
+th.sortable.sort-desc .si { opacity: 1; color: var(--blue); }
 .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
 .badge {
   display: inline-flex;
@@ -605,7 +621,7 @@ tbody td { padding: 10px 14px; color: var(--text); vertical-align: middle; }
 @media (max-width: 900px) {
   body { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
   .queue-grid { grid-template-columns: 1fr; }
   .bottom-stats { grid-template-columns: 1fr 1fr; }
 }
@@ -622,6 +638,49 @@ tbody td { padding: 10px 14px; color: var(--text); vertical-align: middle; }
 .flex-gap { display: flex; gap: 8px; align-items: center; }
 select.no-pl { padding-left: 10px; }
 .search-input { padding-left: 34px; }
+
+/* ── Chart controls ──────────────────────────────────────────────── */
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.chart-window-select {
+  font-size: 12px;
+  font-family: inherit;
+  padding: 4px 28px 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--text-2);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238FA3B1'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+}
+.chart-window-select:focus { outline: none; border-color: var(--blue); }
+.custom-window-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: fadeIn .15s ease;
+}
+.custom-window-input {
+  width: 58px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--text);
+  text-align: right;
+}
+.custom-window-input:focus { outline: none; border-color: var(--blue); }
+.custom-window-label { font-size: 12px; color: var(--text-3); }
 </style>
 </head>
 <body>
@@ -707,6 +766,14 @@ select.no-pl { padding-left: 10px; }
           </svg>
           Refresh
         </button>
+        <button class="btn btn-ghost" style="color:var(--text-3)" onclick="if(confirm('Clear cached metrics for a fresh migration run?')){clearMigrationCache();refreshDashboard();}" title="Clear cached chart data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/>
+            <path d="M9 6V4h6v2"/>
+          </svg>
+          Clear Cache
+        </button>
       </div>
     </div>
 
@@ -756,7 +823,19 @@ select.no-pl { padding-left: 10px; }
         </div>
         <div class="kpi-label">Import Rate</div>
         <div class="kpi-value" id="kpi-rate">0</div>
-        <div class="kpi-sub">users / minute</div>
+        <div class="kpi-sub" id="kpi-rate-sub">users / minute</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-color:#0891B2;--kpi-bg:#ECFEFF">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div class="kpi-label">Duration</div>
+        <div class="kpi-value" id="kpi-duration" style="font-size:22px">—</div>
+        <div class="kpi-sub" id="kpi-duration-sub">not yet started</div>
       </div>
     </div>
 
@@ -788,8 +867,23 @@ select.no-pl { padding-left: 10px; }
     <!-- Rate chart -->
     <div class="chart-card">
       <div class="chart-header">
-        <div class="chart-title">Import Rate — Users per Minute</div>
-        <div class="chart-meta" id="chart-meta">Tracking every 10s · last 30 readings</div>
+        <div class="chart-title" id="chart-title">Import Rate — Users per Minute</div>
+        <div class="chart-controls">
+          <select class="chart-window-select" id="chart-window-select" onchange="onChartWindowChange(this.value)">
+            <option value="5">Last 5 min</option>
+            <option value="10">Last 10 min</option>
+            <option value="30">Last 30 min</option>
+            <option value="60">Last 1 hr</option>
+            <option value="custom">Custom…</option>
+          </select>
+          <div class="custom-window-wrap" id="custom-window-wrap" style="display:none">
+            <input class="custom-window-input" type="number" id="custom-window-input"
+                   min="1" max="480" placeholder="5"
+                   oninput="scheduleCustomWindow()" onkeydown="if(event.key==='Enter')applyCustomWindow()">
+            <span class="custom-window-label">min</span>
+          </div>
+          <div class="chart-meta" id="chart-meta">10s samples · last 5 min</div>
+        </div>
       </div>
       <div class="chart-wrap">
         <canvas id="rate-chart"></canvas>
@@ -937,9 +1031,10 @@ select.no-pl { padding-left: 10px; }
         <input type="text" class="search-input" id="data-search" placeholder="Search by email, UID, name…" oninput="debounceSearch()" autocomplete="off">
       </div>
       <div class="filter-group">
-        <button class="filter-btn active" data-filter="all"      onclick="setFilter(this)">All</button>
-        <button class="filter-btn"        data-filter="imported" onclick="setFilter(this)">Imported</button>
-        <button class="filter-btn"        data-filter="pending"  onclick="setFilter(this)">Pending</button>
+        <button class="filter-btn active" data-filter="all"          onclick="setFilter(this)">All</button>
+        <button class="filter-btn"        data-filter="imported"     onclick="setFilter(this)">Imported</button>
+        <button class="filter-btn"        data-filter="pending"      onclick="setFilter(this)">Pending</button>
+        <button class="filter-btn"        data-filter="email-change" onclick="setFilter(this)">Email Change</button>
       </div>
     </div>
 
@@ -949,17 +1044,18 @@ select.no-pl { padding-left: 10px; }
           <thead>
             <tr>
               <th>#</th>
-              <th>Email</th>
-              <th>UID</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Language</th>
+              <th class="sortable" id="th-email"         onclick="sortBy('email')">Email <i class="si">⇅</i></th>
+              <th class="sortable" id="th-uid"           onclick="sortBy('uid')">UID <i class="si">⇅</i></th>
+              <th class="sortable" id="th-first_name"    onclick="sortBy('first_name')">First Name <i class="si">⇅</i></th>
+              <th class="sortable" id="th-last_name"     onclick="sortBy('last_name')">Last Name <i class="si">⇅</i></th>
+              <th class="sortable" id="th-language"      onclick="sortBy('language')">Language <i class="si">⇅</i></th>
+              <th class="sortable" id="th-email_change"  onclick="sortBy('email_change')">Email Change <i class="si">⇅</i></th>
               <th>Password</th>
-              <th>Status</th>
+              <th class="sortable" id="th-status"        onclick="sortBy('status')">Status <i class="si">⇅</i></th>
             </tr>
           </thead>
           <tbody id="data-tbody">
-            <tr><td colspan="8" class="table-empty"><div class="table-empty-text">Loading records…</div></td></tr>
+            <tr><td colspan="9" class="table-empty"><div class="table-empty-text">Loading records…</div></td></tr>
           </tbody>
         </table>
       </div>
@@ -1052,6 +1148,13 @@ select.no-pl { padding-left: 10px; }
         <input class="form-input" type="text" id="add-hash" placeholder="Optional — leave blank if none">
         <div class="form-hint">Base64-encoded SHA-512 hash from OUD export</div>
       </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:4px">
+        <input type="checkbox" id="add-require-email-change" style="width:16px;height:16px;accent-color:var(--amber);cursor:pointer">
+        <label for="add-require-email-change" class="form-label" style="margin:0;cursor:pointer">
+          Require Email Change
+          <span class="form-hint" style="display:inline;margin-left:6px">Sets <code>app_metadata.requireEmailChange</code> in Auth0</span>
+        </label>
+      </div>
       <div id="add-error" style="color:var(--red);font-size:12px;margin-top:6px;display:none"></div>
     </div>
     <div class="modal-footer">
@@ -1067,21 +1170,118 @@ let currentView   = 'dashboard';
 let dataPage      = 1;
 let dataFilter    = 'all';
 let searchTerm    = '';
+let sortField     = '';
+let sortDir       = 'asc';
 let reviewPage    = 1;
+let migStartTs    = null; // ms — when offset first became > 0
+let migEndTs      = null; // ms — when status hit terminal
+
+const LS_START_TS = 'mig_start_ts';
+const LS_END_TS   = 'mig_end_ts';
 let rateChart     = null;
 
 // For UPM calculation in the browser
-const rateHistory  = [];   // {t, upm}
-const MAX_HIST     = 30;
-let   lastOffset   = null;
-let   lastOffsetTs = null;
+const rateHistory    = [];    // {t, upm} — full history, never trimmed for display
+const STORE_HIST     = 2000;  // max stored samples (~5.5 hrs at 10s)
+let   MAX_HIST       = 30;    // kept for compat (applyChartWindow still sets it)
+const SSE_INTERVAL_S = 10;
+let   chartWindowMin = 5;
+let   customWindowTimeout = null;
+let   lastOffset     = null;
+let   lastOffsetTs   = null;
+let   migrationActive = false;
 
 // Debounce handle
 let searchTimeout = null;
 
+// ── LocalStorage persistence ────────────────────────────────────────
+const LS_RATE_KEY   = 'mig_rate_history';
+const LS_STATS_KEY  = 'mig_last_stats';
+const LS_TTL_MS     = 24 * 60 * 60_000; // discard points older than 24 h
+
+function saveRateHistory() {
+  try {
+    localStorage.setItem(LS_RATE_KEY, JSON.stringify(rateHistory));
+  } catch { /* quota exceeded / private mode */ }
+}
+
+function loadRateHistory() {
+  try {
+    const raw = localStorage.getItem(LS_RATE_KEY);
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    if (!Array.isArray(saved)) return false;
+    const cutoff = Date.now() - LS_TTL_MS;
+    const fresh  = saved.filter(p => p && typeof p.t === 'number' && p.t >= cutoff && typeof p.upm === 'number');
+    if (fresh.length === 0) return false;
+    rateHistory.push(...fresh);
+    return true;
+  } catch { return false; }
+}
+
+function saveLastStats(stats) {
+  try {
+    localStorage.setItem(LS_STATS_KEY, JSON.stringify({ ...stats, _savedAt: Date.now() }));
+  } catch { /* ignore */ }
+}
+
+function loadLastStats() {
+  try {
+    const raw = localStorage.getItem(LS_STATS_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    // Ignore snapshots older than 24 h
+    if (!d._savedAt || Date.now() - d._savedAt > LS_TTL_MS) return null;
+    return d;
+  } catch { return null; }
+}
+
+function clearMigrationCache() {
+  try {
+    localStorage.removeItem(LS_RATE_KEY);
+    localStorage.removeItem(LS_STATS_KEY);
+    localStorage.removeItem(LS_START_TS);
+    localStorage.removeItem(LS_END_TS);
+  } catch { /* ignore */ }
+  rateHistory.length = 0;
+  migStartTs = null;
+  migEndTs   = null;
+  setText('kpi-duration', '—');
+  setText('kpi-duration-sub', 'not yet started');
+  if (rateChart) {
+    rateChart.data.labels   = [];
+    rateChart.data.datasets[0].data = [];
+    rateChart.update('none');
+  }
+}
+
 // ── Init ───────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initChart();
+
+  // Restore migration timing from localStorage
+  try {
+    const s = localStorage.getItem(LS_START_TS);
+    const e = localStorage.getItem(LS_END_TS);
+    if (s) migStartTs = parseInt(s, 10);
+    if (e) migEndTs   = parseInt(e, 10);
+    if (migStartTs) updateDurationKPI('unknown');
+  } catch {}
+
+  // Restore persisted data before first network call
+  const hadHistory = loadRateHistory();
+  applyChartWindow(5); // renders from restored history if any
+
+  const cachedStats = loadLastStats();
+  if (cachedStats) {
+    renderDashboard(cachedStats);
+    setText('dash-last-refresh', 'Restored from cache · ' + new Date(cachedStats._savedAt).toLocaleTimeString());
+  }
+
+  if (hadHistory) {
+    document.getElementById('chart-meta').textContent += '  (cache restored)';
+  }
+
   connectSSE();
   fetchStats();
   setInterval(fetchStats, 30_000);
@@ -1161,10 +1361,14 @@ function updateKPIQuick(d) {
   if (rate) {
     const upm = rate.usersPerMinute || 0;
     recordRate(source?.read, upm);
-    setText('kpi-rate', fmt(upm));
+    applyRateKPI(rate, status);
   }
 
-  if (status) updateStatusBadge(status);
+  if (status) {
+    updateStatusBadge(status);
+    trackMigrationTiming(status, source?.read || 0);
+    updateDurationKPI(status);
+  }
 }
 
 function recordRate(offset, upm) {
@@ -1174,17 +1378,41 @@ function recordRate(offset, upm) {
     const do_ = offset - lastOffset;
     if (dt > 0 && do_ >= 0) {
       const computed = Math.round((do_ / dt) * 60_000);
-      rateHistory.push({ t: now, upm: computed });
-      if (rateHistory.length > MAX_HIST) rateHistory.shift();
-      pushChartPoint(now, computed);
+      // Only push a zero point once (to mark end of activity — don't flood with zeros)
+      const lastUpm = rateHistory.length > 0 ? rateHistory[rateHistory.length - 1].upm : -1;
+      if (!(computed === 0 && lastUpm === 0)) {
+        rateHistory.push({ t: now, upm: computed });
+        if (rateHistory.length > STORE_HIST) rateHistory.shift();
+        renderChartFromHistory();
+        saveRateHistory();
+      }
     }
   }
   if (offset !== undefined) { lastOffset = offset; lastOffsetTs = now; }
-  // If no delta yet (first reading), still push the server-reported rate
+  // First reading: use server-reported rate if we have nothing yet
   if (rateHistory.length === 0 && upm > 0) {
     rateHistory.push({ t: now, upm });
-    pushChartPoint(now, upm);
+    renderChartFromHistory();
+    saveRateHistory();
   }
+}
+
+function renderChartFromHistory() {
+  if (!rateChart) return;
+  const now    = Date.now();
+  const cutoff = now - chartWindowMin * 60_000;
+  const visible = rateHistory.filter(p => p.t >= cutoff);
+
+  // Data as {x: timestamp, y: upm} for the time scale
+  rateChart.data.datasets[0].data = visible.map(p => ({ x: p.t, y: p.upm }));
+
+  // Always pin the x-axis to the full selected window so the axis stretches
+  // even when there are only a few data points — this makes the dropdown
+  // visually change the chart immediately.
+  rateChart.options.scales.x.min = cutoff;
+  rateChart.options.scales.x.max = now;
+
+  rateChart.update('none');
 }
 
 // ── Full stats fetch ────────────────────────────────────────────────
@@ -1200,6 +1428,7 @@ async function fetchStats() {
 function refreshDashboard() { fetchStats(); }
 
 function renderDashboard(d) {
+  if (!d._savedAt) saveLastStats(d); // persist live data (skip if already a cached snapshot)
   const { source, chunks, status, statusUpdatedAt, manualReviewCount, queues, rate } = d;
 
   // KPIs
@@ -1210,8 +1439,8 @@ function renderDashboard(d) {
   setText('kpi-chunks-sub', 'of ' + fmt(chunks.total) + ' total chunks');
 
   const upm = rate.usersPerMinute || 0;
-  setText('kpi-rate', fmt(upm));
   recordRate(source.read, upm);
+  applyRateKPI(rate, status);
 
   // Progress bars
   setText('prog-read-pct', source.readPercent + '%');
@@ -1241,6 +1470,9 @@ function renderDashboard(d) {
   setText('kpi-eta', rate.etaMinutes != null ? fmtDuration(rate.etaMinutes) : '—');
   setText('kpi-status-ts', statusUpdatedAt ? new Date(statusUpdatedAt).toLocaleString() : '—');
 
+  trackMigrationTiming(status, source.read);
+  updateDurationKPI(status);
+
   setText('dash-last-refresh', 'Last updated: ' + new Date().toLocaleTimeString());
 }
 
@@ -1248,6 +1480,7 @@ function updateStatusBadge(status) {
   const el = document.getElementById('status-badge');
   el.textContent = status || 'idle';
   el.className = 'status-badge ' + (status || 'idle');
+  migrationActive = status === 'running';
 }
 
 function renderQueue(name, counts) {
@@ -1257,6 +1490,75 @@ function renderQueue(name, counts) {
   setText(`q-${name}-delayed`,   fmt(c.delayed   || 0));
   setText(`q-${name}-completed`, fmt(c.completed || 0));
   setText(`q-${name}-failed`,    fmt(c.failed    || 0));
+}
+
+// ── Rate KPI ────────────────────────────────────────────────────────
+function applyRateKPI(rate, status) {
+  if (!rate) return;
+
+  const isTerminal = status === 'completed' || status === 'completed_with_manual_review';
+
+  if (isTerminal && rateHistory.length > 0) {
+    // Migration done — use the peak value from actual measurements.
+    // The server's finalRate.ups is unreliable when migration completes in <10s
+    // because migStartTime and the completed tick arrive in the same sample.
+    const peak = Math.max(...rateHistory.map(p => p.upm));
+    setText('kpi-rate', fmt(peak));
+    setText('kpi-rate-sub', 'users / min  peak rate  (completed)');
+  } else {
+    const upm = rate.usersPerMinute || 0;
+    setText('kpi-rate', fmt(upm));
+    setText('kpi-rate-sub', 'users / minute');
+  }
+}
+
+// ── Migration duration tracking ─────────────────────────────────────
+function formatDuration(ms) {
+  if (!ms || ms <= 0) return '—';
+  const totalSec = Math.round(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function trackMigrationTiming(status, offset) {
+  const isTerminal = status === 'completed' || status === 'completed_with_manual_review';
+
+  // Record start — first tick where offset > 0 and migration is not already terminal
+  if (!migStartTs && offset > 0 && !isTerminal) {
+    migStartTs = Date.now();
+    try { localStorage.setItem(LS_START_TS, String(migStartTs)); } catch {}
+  }
+
+  // Record end — first terminal tick after a known start
+  if (isTerminal && migStartTs && !migEndTs) {
+    migEndTs = Date.now();
+    try { localStorage.setItem(LS_END_TS, String(migEndTs)); } catch {}
+  }
+
+  // Reset when back to idle with no progress (fresh run after reset)
+  if (status === 'idle' && offset === 0 && migStartTs) {
+    migStartTs = null; migEndTs = null;
+    try { localStorage.removeItem(LS_START_TS); localStorage.removeItem(LS_END_TS); } catch {}
+  }
+}
+
+function updateDurationKPI(status) {
+  const isTerminal = status === 'completed' || status === 'completed_with_manual_review';
+
+  if (migStartTs && migEndTs) {
+    setText('kpi-duration', formatDuration(migEndTs - migStartTs));
+    setText('kpi-duration-sub', 'total migration time');
+  } else if (migStartTs && !isTerminal) {
+    setText('kpi-duration', formatDuration(Date.now() - migStartTs));
+    setText('kpi-duration-sub', 'elapsed · running…');
+  } else {
+    setText('kpi-duration', '—');
+    setText('kpi-duration-sub', 'not yet started');
+  }
 }
 
 // ── Chart ───────────────────────────────────────────────────────────
@@ -1269,38 +1571,48 @@ function initChart() {
   rateChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels:   [],
       datasets: [{
         label: 'Users/min',
-        data: [],
+        data: [],           // {x: timestamp_ms, y: upm}
         borderColor: '#3B82F6',
-        backgroundColor: 'rgba(59,130,246,.12)',
+        backgroundColor: 'rgba(59,130,246,.10)',
         borderWidth: 2,
-        pointRadius: 3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
         pointBackgroundColor: '#3B82F6',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.5,
         fill: true,
-        tension: 0.4,
+        tension: 0,
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 400 },
+      animation: { duration: 300 },
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => ' ' + fmt(ctx.raw) + ' users/min',
+            title: (items) => new Date(items[0].parsed.x).toLocaleTimeString(),
+            label: (item)  => '  ' + fmt(item.parsed.y) + ' users/min',
           }
         }
       },
       scales: {
         x: {
-          grid: { color: gridColor },
-          ticks: { color: textColor, maxTicksLimit: 8, font: { size: 11 } },
+          type: 'time',
+          time: {
+            tooltipFormat: 'HH:mm:ss',
+            displayFormats: { second: 'HH:mm:ss', minute: 'HH:mm', hour: 'HH:mm' },
+          },
+          grid:  { color: gridColor },
+          ticks: { color: textColor, maxTicksLimit: 7, font: { size: 11 },
+                   maxRotation: 0, autoSkip: true },
+          // min/max are set dynamically by renderChartFromHistory()
         },
         y: {
-          grid: { color: gridColor },
+          grid:  { color: gridColor },
           ticks: { color: textColor, font: { size: 11 }, callback: (v) => fmt(v) },
           beginAtZero: true,
         }
@@ -1309,34 +1621,97 @@ function initChart() {
   });
 }
 
-function pushChartPoint(timestamp, upm) {
-  if (!rateChart) return;
-  const label = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  rateChart.data.labels.push(label);
-  rateChart.data.datasets[0].data.push(upm);
-  if (rateChart.data.labels.length > MAX_HIST) {
-    rateChart.data.labels.shift();
-    rateChart.data.datasets[0].data.shift();
+function pushChartPoint(_timestamp, _upm) {
+  // Replaced by renderChartFromHistory() — kept for safety
+  renderChartFromHistory();
+}
+
+// ── Chart window controls ────────────────────────────────────────────
+function onChartWindowChange(value) {
+  const customWrap = document.getElementById('custom-window-wrap');
+  if (value === 'custom') {
+    customWrap.style.display = 'flex';
+    document.getElementById('custom-window-input').focus();
+  } else {
+    customWrap.style.display = 'none';
+    applyChartWindow(parseInt(value, 10));
   }
-  rateChart.update('none');
+}
+
+function scheduleCustomWindow() {
+  clearTimeout(customWindowTimeout);
+  customWindowTimeout = setTimeout(applyCustomWindow, 600);
+}
+
+function applyCustomWindow() {
+  const input = document.getElementById('custom-window-input');
+  const val = parseInt(input.value, 10);
+  if (!val || val < 1) return;
+  applyChartWindow(Math.min(val, 480));
+}
+
+function applyChartWindow(minutes) {
+  chartWindowMin = minutes;
+  MAX_HIST = Math.max(10, Math.round((minutes * 60) / SSE_INTERVAL_S));
+
+  // Re-render with the new time window pinned to x-axis min/max
+  renderChartFromHistory();
+
+  const windowLabel = minutes >= 60 ? (minutes / 60) + ' hr' : minutes + ' min';
+  const pointsInWindow = rateHistory.filter(p => p.t >= Date.now() - minutes * 60_000).length;
+  document.getElementById('chart-title').textContent =
+    'Import Rate — Users per Minute  ·  last ' + windowLabel;
+  document.getElementById('chart-meta').textContent =
+    SSE_INTERVAL_S + 's samples · ' + windowLabel + ' window' +
+    (pointsInWindow > 0 ? ' · ' + pointsInWindow + ' readings' : ' · no data in this window');
+}
+
+// ── Column sorting ──────────────────────────────────────────────────
+function sortBy(field) {
+  if (sortField === field) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField = field;
+    sortDir   = 'asc';
+  }
+  dataPage = 1;
+  updateSortHeaders();
+  fetchUsers();
+}
+
+function updateSortHeaders() {
+  const fields = ['email','uid','first_name','last_name','language','email_change','status'];
+  for (const f of fields) {
+    const th = document.getElementById('th-' + f);
+    if (!th) continue;
+    th.classList.remove('sort-asc', 'sort-desc');
+    const icon = th.querySelector('.si');
+    if (sortField === f) {
+      th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+      if (icon) icon.textContent = sortDir === 'asc' ? '↑' : '↓';
+    } else {
+      if (icon) icon.textContent = '⇅';
+    }
+  }
 }
 
 // ── Data Browser ────────────────────────────────────────────────────
 async function fetchUsers() {
   document.getElementById('data-tbody').innerHTML =
-    '<tr><td colspan="8" class="table-empty"><div class="table-empty-text">Loading…</div></td></tr>';
+    '<tr><td colspan="9" class="table-empty"><div class="table-empty-text">Loading…</div></td></tr>';
   try {
     const params = new URLSearchParams({
       page: dataPage, limit: 20, filter: dataFilter,
     });
     if (searchTerm) params.set('search', searchTerm);
+    if (sortField)  { params.set('sort', sortField); params.set('sortDir', sortDir); }
     const r = await fetch('/api/users?' + params);
     const d = await r.json();
     if (d.error) throw new Error(d.error);
     renderUsersTable(d);
   } catch (e) {
     document.getElementById('data-tbody').innerHTML =
-      `<tr><td colspan="8" class="table-empty"><div class="table-empty-text">Error: ${e.message}</div></td></tr>`;
+      `<tr><td colspan="9" class="table-empty"><div class="table-empty-text">Error: ${e.message}</div></td></tr>`;
   }
 }
 
@@ -1352,7 +1727,7 @@ function renderUsersTable(d) {
 
   if (!users || users.length === 0) {
     document.getElementById('data-tbody').innerHTML =
-      '<tr><td colspan="8" class="table-empty"><div class="table-empty-icon">📭</div><div class="table-empty-text">No records found</div></td></tr>';
+      '<tr><td colspan="9" class="table-empty"><div class="table-empty-icon">📭</div><div class="table-empty-text">No records found</div></td></tr>';
     setText('data-page-info', '');
     document.getElementById('data-page-btns').innerHTML = '';
     return;
@@ -1368,6 +1743,9 @@ function renderUsersTable(d) {
     const badge = u._imported
       ? '<span class="badge badge-imported">Imported</span>'
       : '<span class="badge badge-pending">Pending</span>';
+    const emailChangeBadge = u.requireEmailChange === true
+      ? `<span class="badge" style="background:var(--amber-lt);color:var(--amber);font-size:11px">Required</span>`
+      : `<span style="color:var(--text-3);font-size:12px">—</span>`;
     return `<tr>
       <td class="text-muted mono" style="font-size:11px">${(u._index + 1).toLocaleString()}</td>
       <td class="mono">${esc(u.email || '')}</td>
@@ -1375,6 +1753,7 @@ function renderUsersTable(d) {
       <td>${esc(u.first_name || '')}</td>
       <td>${esc(u.last_name  || '')}</td>
       <td><span style="font-size:12px">${esc(u.language_preference || '')}</span></td>
+      <td>${emailChangeBadge}</td>
       <td class="text-muted" style="font-size:11px">${u.password_hash ? u.password_hash : '<span class="text-muted">—</span>'}</td>
       <td>${badge}</td>
     </tr>`;
@@ -1493,18 +1872,20 @@ function clearAddForm() {
   ['add-email','add-uid','add-first','add-last','add-lang','add-hash'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  document.getElementById('add-require-email-change').checked = false;
   const errEl = document.getElementById('add-error');
   errEl.style.display = 'none';
   errEl.textContent = '';
 }
 
 async function submitAddUser() {
-  const email  = document.getElementById('add-email').value.trim();
-  const uid    = document.getElementById('add-uid').value.trim();
-  const first  = document.getElementById('add-first').value.trim();
-  const last   = document.getElementById('add-last').value.trim();
-  const lang   = document.getElementById('add-lang').value.trim();
-  const hash   = document.getElementById('add-hash').value.trim();
+  const email             = document.getElementById('add-email').value.trim();
+  const uid               = document.getElementById('add-uid').value.trim();
+  const first             = document.getElementById('add-first').value.trim();
+  const last              = document.getElementById('add-last').value.trim();
+  const lang              = document.getElementById('add-lang').value.trim();
+  const hash              = document.getElementById('add-hash').value.trim();
+  const requireEmailChange = document.getElementById('add-require-email-change').checked;
 
   const errEl = document.getElementById('add-error');
   errEl.style.display = 'none';
@@ -1520,8 +1901,9 @@ async function submitAddUser() {
     const body = { email, uid };
     if (first) body.first_name         = first;
     if (last)  body.last_name          = last;
-    if (lang)  body.language_preference = lang;
-    if (hash)  body.password_hash       = hash;
+    if (lang)              body.language_preference = lang;
+    if (hash)              body.password_hash       = hash;
+    if (requireEmailChange) body.requireEmailChange = true;
 
     const r = await fetch('/api/users', {
       method: 'POST',

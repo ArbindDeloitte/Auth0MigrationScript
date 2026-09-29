@@ -1,5 +1,5 @@
-# start-redis.ps1  — start Redis for the LADWP migration (no admin required)
-# Redis binaries must be at C:\Redis\  (already installed by setup-redis-windows.ps1)
+# start-redis.ps1 - start Redis for the LADWP migration (no admin required)
+# Redis binaries must be at C:\Redis\ (already installed by setup-redis-windows.ps1)
 # Run from any PowerShell window: .\start-redis.ps1
 
 $redisSrv  = 'C:\Redis\redis-server.exe'
@@ -14,9 +14,19 @@ if (-not (Test-Path $redisSrv)) {
 # Kill any stale instance
 Stop-Process -Name redis-server -Force -ErrorAction SilentlyContinue
 
-# Ensure config exists (no BOM)
+# Write config if missing (no BOM so Redis can parse it)
 if (-not (Test-Path $redisConf)) {
-    $conf = "bind 127.0.0.1`nport 6379`nprotected-mode no`nappendonly yes`nappendfsync everysec`nappendfilename appendonly.aof`nsave `"`"`nlogfile C:/Redis/redis.log`ndir C:/Redis"
+    $conf = @"
+bind 127.0.0.1
+port 6379
+protected-mode no
+appendonly yes
+appendfsync everysec
+appendfilename appendonly.aof
+save ""
+logfile C:/Redis/redis.log
+dir C:/Redis
+"@
     [System.IO.File]::WriteAllText($redisConf, $conf, [System.Text.UTF8Encoding]::new($false))
     Write-Host "Config written to $redisConf"
 }
@@ -27,7 +37,7 @@ Start-Sleep -Seconds 2
 
 $pong = & $redisCli -p 6379 PING 2>$null
 if ($pong -eq 'PONG') {
-    Write-Host "Redis is running  (PID $($proc.Id))  — 127.0.0.1:6379" -ForegroundColor Green
+    Write-Host "Redis is running (PID $($proc.Id)) - 127.0.0.1:6379" -ForegroundColor Green
 } else {
     Write-Warning "Redis did not respond to PING. Check C:\Redis\redis.log"
 }
