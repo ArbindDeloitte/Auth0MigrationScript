@@ -22,15 +22,21 @@ const statusProcessor = require('./processors/statusProcessor');
 const retryProcessor = require('./processors/retryProcessor');
 const { flushRetryStagingBatch } = require('./services/retryBatchService');
 
-const isFreshRun = process.argv.includes('--fresh');
+const isFreshRun  = process.argv.includes('--fresh');
+// --verify: run gap detection only. If all users are accounted for, report and
+// exit without creating new chunk files or queuing any import jobs. If a gap
+// exists, re-queue only the missing users and process just those via retryQueue.
+const isVerifyRun = process.argv.includes('--verify');
 
-// Module-level so the signal handler can drain workers even if main() hasn't returned.
-let activeWorkers = [];
+// Module-level so the signal handler can reach these even if main() hasn't returned.
+let activeWorkers       = [];
+let _heartbeatInterval  = null;
 
 async function main() {
   logger.info('Auth0 User Migration starting', {
     maxConcurrentJobs: config.migration.maxConcurrentJobs,
     freshRun: isFreshRun,
+    verifyRun: isVerifyRun,
   });
 
   ensureOutputDirs();
@@ -81,14 +87,17 @@ async function main() {
       await failedUserService.appendUsers(users, reason);
       logger.warn(`${users.length} users written to manual review`, { chunkId });
     } else {
-      for (const user of users) {
-        const emailKey = (user.email || '').toLowerCase() || chunkId;
-        await retryQueue.add(
-          'retry-user',
-          { user, failureReason: `Chunk upload failed (${httpStatus ?? 'network'}): ${err.message}`, chunkId },
-          { jobId: `retry-${emailKey}-${chunkId}` }
-        );
-      }
+      const failureReason = `Chunk upload failed (${httpStatus ?? 'network'}): ${err.message}`;
+      await retryQueue.addBulk(
+        users.map((user, i) => {
+          const emailKey = (user.email || '').toLowerCase() || `noemail-${i}`;
+          return {
+            name: 'retry-user',
+            data: { user, failureReason, chunkId },
+            opts: { jobId: `retry-${emailKey}-${chunkId}` },
+          };
+        })
+      );
       logger.warn(`${users.length} users queued for individual retry`, { chunkId });
     }
   });
@@ -97,6 +106,51 @@ async function main() {
   // was mid-flight when the process died will be recovered as an orphaned chunk
   // file — the counter itself is always stale after a restart.
   await checkpointService.resetBatchInFlight();
+
+  // Flush any manual-review users that were buffered to Redis in a prior run
+  // that crashed before the end-of-migration flush reached the Excel file.
+  await flushManualReviewPending();
+
+  // ── Verify-only mode (--verify) ──────────────────────────────────────────
+  // Checks whether all source users are accounted for without creating new
+  // chunk files or queuing any import jobs. Use this after a run where most
+  // users were already in Auth0 to confirm the migration is complete, rather
+  // than re-processing the entire source list.
+  if (isVerifyRun) {
+    const [importedCount, manualCount, totalUsers] = await Promise.all([
+      checkpointService.getSuccessfulUserCount(),
+      checkpointService.getManualReviewUserCount(),
+      redisDataService.getTotalUsers(),
+    ]);
+    const gap = totalUsers - importedCount - manualCount;
+
+    logger.info('=== VERIFY RUN ===', { totalUsers, importedCount, manualCount, gap });
+
+    if (gap <= 0) {
+      logger.info('All users accounted for — migration is complete', {
+        totalUsers,
+        importedCount,
+        manualCount,
+      });
+      await flushManualReviewPending();
+      const finalStatus = manualCount > 0 ? 'completed_with_manual_review' : 'completed';
+      await checkpointService.setMigrationStatus(finalStatus);
+      logger.info('=== MIGRATION COMPLETE (verified) ===', {
+        totalUsers, importedCount, manualReviewCount: manualCount, status: finalStatus,
+      });
+      await gracefulShutdown(activeWorkers);
+      return;
+    }
+
+    logger.warn(`Gap of ${gap} users found — re-queuing only missing users and processing`, {
+      totalUsers, importedCount, manualCount, gap,
+    });
+    await requeueGapUsers(totalUsers);
+    // Let the workers drain the gap users then complete normally.
+    await waitForCompletion(activeWorkers, []);
+    return;
+  }
+  // ── End verify-only mode ─────────────────────────────────────────────────
 
   // Load existing checkpoint
   const processedChunks = await checkpointService.getProcessedChunks();
@@ -155,6 +209,13 @@ async function main() {
   await checkpointService.setTotalChunks(allChunks.length);
   await checkpointService.setMigrationStatus('running');
 
+  // Heartbeat — lets the dashboard distinguish "running" from "script crashed with
+  // stale status". Written every 10 s with a 30 s TTL; deleted on graceful shutdown.
+  const _hbKey = 'migration:heartbeat';
+  const _writeHeartbeat = () => getRedisConnection().set(_hbKey, Date.now().toString(), 'EX', 30);
+  _writeHeartbeat();
+  _heartbeatInterval = setInterval(_writeHeartbeat, 10_000);
+
   for (const { chunk, existingAuth0JobId } of orphanedChunks) {
     if (existingAuth0JobId) {
       logger.info('Orphaned chunk already submitted to Auth0 — re-queuing status poll', {
@@ -164,22 +225,27 @@ async function main() {
       await statusQueue.add(
         'poll-status',
         { chunkId: chunk.chunkId, auth0JobId: existingAuth0JobId, attempts: 0 },
-        { delay: config.migration.statusPollIntervalMs, jobId: `poll-${chunk.chunkId}` }
+        { delay: config.migration.statusPollIntervalMs, jobId: `poll-${chunk.chunkId}`, removeOnComplete: true }
       );
     } else {
       await importQueue.add('import-chunk', chunk, { jobId: chunk.chunkId });
     }
   }
 
-  let queued = 0;
-  for (const chunk of newChunks) {
+  const chunksToQueue = newChunks.filter(chunk => {
     if (processedSet.has(chunk.chunkId)) {
       logger.info('Skipping already-processed chunk', { chunkId: chunk.chunkId });
-      continue;
+      return false;
     }
-    await importQueue.add('import-chunk', chunk, { jobId: chunk.chunkId });
-    queued++;
+    return true;
+  });
+
+  if (chunksToQueue.length > 0) {
+    await importQueue.addBulk(
+      chunksToQueue.map(chunk => ({ name: 'import-chunk', data: chunk, opts: { jobId: chunk.chunkId } }))
+    );
   }
+  const queued = chunksToQueue.length;
 
   logger.info('Chunks enqueued', {
     total: allChunks.length,
@@ -283,8 +349,19 @@ async function requeueGapUsers(totalUsers) {
   const manualSet   = new Set(manualEmails.map(e => e.toLowerCase()));
 
   const SCAN_BATCH = 500;
+  // addBulk submits many jobs in one Redis pipeline instead of one round-trip per
+  // user. Without this, 94K sequential awaits take ~90+ seconds at startup.
+  const QUEUE_BATCH = 500;
+  let pendingBulk = [];
   let requeued = 0;
   let scanned = 0;
+
+  const flushBulk = async () => {
+    if (pendingBulk.length === 0) return;
+    await retryQueue.addBulk(pendingBulk);
+    requeued += pendingBulk.length;
+    pendingBulk = [];
+  };
 
   for (let start = 0; start < totalUsers; start += SCAN_BATCH) {
     const rawUsers = await redisDataService.getSourceUsersBatch(start, SCAN_BATCH);
@@ -309,16 +386,19 @@ async function requeueGapUsers(totalUsers) {
         continue;
       }
 
-      await retryQueue.add(
-        'retry-user',
-        {
+      pendingBulk.push({
+        name: 'retry-user',
+        data: {
           user,
           failureReason: 'Gap recovery: user not found in Auth0 success record or manual review',
           chunkId: 'gap-recovery',
         },
-        { jobId: `gap-${email}` } // deterministic: won't duplicate if already queued
-      );
-      requeued++;
+        opts: { jobId: `gap-${email}` }, // deterministic: won't duplicate if already queued
+      });
+
+      if (pendingBulk.length >= QUEUE_BATCH) {
+        await flushBulk();
+      }
     }
 
     scanned += rawUsers.length;
@@ -327,6 +407,7 @@ async function requeueGapUsers(totalUsers) {
     }
   }
 
+  await flushBulk(); // flush any remaining users under the batch threshold
   logger.warn('Gap recovery scan complete', { scanned, requeued });
 }
 
@@ -393,7 +474,7 @@ async function waitForCompletion(workers, allChunks) {
         if (stagingCount > 0) {
           logger.info('Queues empty but staging list has users — flushing final batch', { stagingCount });
           try {
-            const result = await flushRetryStagingBatch();
+            const result = await flushRetryStagingBatch(true); // forceFlush — remaining users may be < MIN_FLUSH_SIZE
             if (result) {
               logger.info('Final retry batch submitted', {
                 batchChunkId: result.batchChunkId,
@@ -414,6 +495,37 @@ async function waitForCompletion(workers, allChunks) {
 
     const timer = setInterval(check, CHECK_INTERVAL_MS);
     check().catch((err) => logger.error('Completion check error', { error: err.message }));
+  });
+}
+
+// Reads the Redis manual-review pending buffer, groups entries by reason, and
+// writes them to the Excel file in one batch per reason group. Called at startup
+// (to recover from a crash before the previous flush) and at completion.
+// Deduplicates by email within each group to handle the case where a user was
+// pushed to the buffer multiple times (e.g. an orphaned chunk re-processed on restart).
+async function flushManualReviewPending() {
+  const pending = await checkpointService.popAllManualReviewPending();
+  if (pending.length === 0) return;
+
+  // Group by reason
+  const byReason = new Map();
+  for (const { user, reason } of pending) {
+    if (!byReason.has(reason)) byReason.set(reason, new Map());
+    const emailKey = (user.email || '').toLowerCase() || JSON.stringify(user);
+    byReason.get(reason).set(emailKey, user); // Map deduplicates by email
+  }
+
+  let totalWritten = 0;
+  for (const [reason, userMap] of byReason) {
+    const users = [...userMap.values()];
+    await failedUserService.appendUsers(users, reason);
+    totalWritten += users.length;
+  }
+
+  logger.info('Manual review pending buffer flushed to Excel', {
+    total: pending.length,
+    written: totalWritten,
+    duplicatesRemoved: pending.length - totalWritten,
   });
 }
 
@@ -444,6 +556,9 @@ async function onComplete(allChunks, workers) {
     return;
   }
 
+  // Write any buffered manual-review users to Excel before reporting final counts.
+  await flushManualReviewPending();
+
   const finalStatus = manualCount > 0 ? 'completed_with_manual_review' : 'completed';
   await checkpointService.setMigrationStatus(finalStatus);
 
@@ -469,8 +584,31 @@ async function onComplete(allChunks, workers) {
 }
 
 async function gracefulShutdown(workers) {
+  // Stop the heartbeat immediately so the dashboard sees "stopped" without
+  // waiting for the 30 s TTL to expire.
+  if (typeof _heartbeatInterval !== 'undefined') clearInterval(_heartbeatInterval);
+  try { await getRedisConnection().del('migration:heartbeat'); } catch { /* best-effort */ }
+
   logger.info('Draining and closing workers...');
-  await Promise.all(workers.map((w) => w.close()));
+  const DRAIN_TIMEOUT_MS = 15_000;
+
+  // Give workers up to 15s to finish active jobs gracefully, then force-close.
+  // Without a timeout, a worker stuck in an infinite slot-wait loop (importProcessor)
+  // blocks close() forever and the process never exits.
+  await Promise.all(workers.map((w) =>
+    Promise.race([
+      w.close(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('drain timeout')), DRAIN_TIMEOUT_MS)
+      ),
+    ]).catch(async (err) => {
+      if (err.message === 'drain timeout') {
+        logger.warn('Worker did not drain in time — force closing', { worker: w.name });
+        await w.close(true).catch(() => {});
+      }
+    })
+  ));
+
   await closeQueues();
   await closeRedisConnection();
   logger.info('Shutdown complete');

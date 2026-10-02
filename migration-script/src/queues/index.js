@@ -46,21 +46,29 @@ function createImportWorker(processorFn) {
   return new Worker(QUEUE.IMPORT, processorFn, {
     connection: createRedisConnection(),
     concurrency: config.migration.maxConcurrentJobs,
+    // Import jobs spin in a slot-wait loop (10s × N iterations) before uploading
+    // to Auth0. Default 30s lock expires during that wait — use 5 min so the job
+    // stays alive while waiting for a free Auth0 slot. The loop also extends the
+    // lock on every iteration as an extra safety net.
+    lockDuration: 300_000,
   });
 }
 
 function createStatusWorker(processorFn) {
   return new Worker(QUEUE.STATUS, processorFn, {
     connection: createRedisConnection(),
-    // Status workers can run more concurrently than active Auth0 jobs
     concurrency: config.migration.maxConcurrentJobs * 2,
+    lockDuration: 60_000,
   });
 }
 
 function createRetryWorker(processorFn) {
   return new Worker(QUEUE.RETRY, processorFn, {
     connection: createRedisConnection(),
-    concurrency: config.migration.maxConcurrentJobs,
+    // Higher concurrency so the 94K gap-recovery backlog drains quickly.
+    // retryProcessor only does Redis ops — no Auth0 calls — so high concurrency is safe.
+    concurrency: 20,
+    lockDuration: 60_000,
   });
 }
 

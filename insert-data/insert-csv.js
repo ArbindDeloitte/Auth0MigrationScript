@@ -38,7 +38,7 @@ function mapRow(row) {
     first_name:          (row.GIVENNAME            || '').trim(),
     last_name:           (row.SN                   || '').trim(),
     password_hash:       (row.USERPASSWORD         || '').trim(),
-    language_preference: (row.OUD_PREFERREDLANGUAGE || '').trim(),
+    language_preference: (row.OUD_PREFERREDLANGUAGE || '').trim().toLowerCase().startsWith('spanish') ? 'es' : 'en',
     requireEmailChange:  useSubEmail,
   };
 }

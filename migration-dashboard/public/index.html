@@ -263,12 +263,14 @@ body {
 .btn-primary:hover { opacity: .88; }
 .btn-ghost { background: var(--surface); color: var(--text-2); border: 1px solid var(--border); }
 .btn-ghost:hover { background: var(--surface2); }
+.btn-danger { background: var(--red-lt); color: var(--red); border: 1px solid rgba(220,38,38,.25); }
+.btn-danger:hover { opacity: .85; }
 .btn svg { width: 14px; height: 14px; }
 
 /* ── KPI tiles ───────────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -327,6 +329,46 @@ body {
 }
 .progress-detail { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 
+/* ── Outcome breakdown bar ───────────────────────────────────────── */
+.outcome-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+.outcome-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.outcome-title  { font-size: 13px; font-weight: 600; color: var(--text); }
+.outcome-meta   { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.outcome-track  {
+  height: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface2);
+  display: flex;
+  margin-bottom: 10px;
+}
+.outcome-seg {
+  height: 100%;
+  transition: width .6s ease;
+  min-width: 0;
+}
+.outcome-seg.confirmed { background: var(--green); }
+.outcome-seg.manual    { background: var(--red);   }
+.outcome-seg.pending   { background: var(--border); }
+.outcome-legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-2); }
+.leg-dot  { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.leg-item.leg-confirmed .leg-dot { background: var(--green); }
+.leg-item.leg-manual    .leg-dot { background: var(--red); }
+.leg-item.leg-pending   .leg-dot { background: var(--border); }
+.leg-item strong, .leg-val { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; }
+
 /* ── Chart card ──────────────────────────────────────────────────── */
 .chart-card {
   background: var(--surface);
@@ -369,7 +411,7 @@ body {
 /* ── Bottom stats row ────────────────────────────────────────────── */
 .bottom-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 .info-card {
@@ -489,6 +531,7 @@ th.sortable.sort-desc .si { opacity: 1; color: var(--blue); }
 }
 .badge-imported { background: var(--green-lt); color: var(--green); }
 .badge-pending  { background: var(--surface2); color: var(--text-3); }
+.badge-manual   { background: var(--red-lt);   color: var(--red); }
 .badge-error    { background: var(--red-lt); color: var(--red); }
 .text-muted { color: var(--text-3); font-style: italic; }
 .table-empty { padding: 48px 20px; text-align: center; color: var(--text-3); }
@@ -621,7 +664,7 @@ th.sortable.sort-desc .si { opacity: 1; color: var(--blue); }
 @media (max-width: 900px) {
   body { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .queue-grid { grid-template-columns: 1fr; }
   .bottom-stats { grid-template-columns: 1fr 1fr; }
 }
@@ -631,6 +674,90 @@ th.sortable.sort-desc .si { opacity: 1; color: var(--blue); }
   .progress-grid { grid-template-columns: 1fr; }
   .bottom-stats { grid-template-columns: 1fr; }
 }
+
+/* ── Manual Review summary pills ─────────────────────────────────── */
+.review-pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+}
+.review-pill:hover  { border-color: var(--blue); background: var(--blue-lt); }
+.review-pill.active { border-color: var(--blue); background: var(--blue-lt); }
+.rp-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.rp-val   { font-size: 22px; font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
+.review-pill.active .rp-label { color: var(--blue); }
+
+/* ── Column filter dropdown (Excel-style) ────────────────────────── */
+.col-filter-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid transparent; border-radius: 3px;
+  padding: 1px 3px; cursor: pointer; color: var(--text-3); line-height: 1;
+  transition: background .12s, color .12s, border-color .12s;
+  flex-shrink: 0;
+}
+.col-filter-btn:hover           { background: var(--border); color: var(--text-1); border-color: var(--border); }
+.col-filter-btn.active          { background: var(--blue-lt); color: var(--blue); border-color: var(--blue); }
+.col-filter-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 200;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  min-width: 220px; padding: 6px 0; font-size: 12px;
+}
+.cfd-search {
+  display: block; width: calc(100% - 16px); margin: 6px 8px 4px;
+  padding: 5px 8px; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--bg); color: var(--text-1); font-size: 12px;
+  outline: none; box-sizing: border-box;
+}
+.cfd-search:focus { border-color: var(--blue); }
+.cfd-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.cfd-actions {
+  display: flex; gap: 6px; padding: 4px 10px;
+}
+.cfd-action-btn {
+  flex: 1; padding: 3px 0; font-size: 11px; cursor: pointer;
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text-2); transition: background .1s, color .1s;
+}
+.cfd-action-btn:hover { background: var(--blue-lt); color: var(--blue); border-color: var(--blue); }
+.cfd-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 12px; cursor: pointer; color: var(--text-1);
+  transition: background .1s; white-space: nowrap; user-select: none;
+}
+.cfd-item:hover { background: var(--blue-lt); }
+.cfd-checkbox {
+  width: 14px; height: 14px; accent-color: var(--blue);
+  cursor: pointer; flex-shrink: 0; margin: 0;
+}
+.cfd-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cfd-label { flex: 1; }
+.cfd-count {
+  font-variant-numeric: tabular-nums; font-size: 11px;
+  color: var(--text-3); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 1px 6px; min-width: 24px; text-align: center;
+}
+.cfd-footer {
+  padding: 6px 10px 4px; display: flex; gap: 6px;
+}
+.cfd-apply {
+  flex: 1; padding: 6px 0; font-size: 12px; font-weight: 600;
+  cursor: pointer; background: var(--blue); color: #fff;
+  border: none; border-radius: 5px; transition: opacity .15s;
+}
+.cfd-apply:hover { opacity: .85; }
+.cfd-apply:disabled { opacity: .5; cursor: default; }
+.cfd-reset {
+  padding: 6px 10px; font-size: 12px; cursor: pointer;
+  background: none; border: 1px solid var(--border); border-radius: 5px;
+  color: var(--text-2); transition: background .1s;
+}
+.cfd-reset:hover { background: var(--border); }
 
 /* ── Misc ────────────────────────────────────────────────────────── */
 .divider { height: 1px; background: var(--border); margin: 0 -20px 20px; }
@@ -774,11 +901,19 @@ select.no-pl { padding-left: 10px; }
           </svg>
           Clear Cache
         </button>
+        <button class="btn btn-danger" onclick="openResetModal()" title="Reset all Redis migration state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Reset All Data
+        </button>
       </div>
     </div>
 
-    <!-- KPIs -->
+    <!-- KPIs — Row 1: source totals; Row 2: performance -->
     <div class="kpi-grid">
+      <!-- Row 1 -->
       <div class="kpi-card" style="--kpi-color:#2563EB;--kpi-bg:#EFF6FF">
         <div class="kpi-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -790,32 +925,47 @@ select.no-pl { padding-left: 10px; }
         </div>
         <div class="kpi-label">Total Source Users</div>
         <div class="kpi-value" id="kpi-total">—</div>
-        <div class="kpi-sub">Redis list length</div>
+        <div class="kpi-sub">Redis source list</div>
       </div>
 
       <div class="kpi-card" style="--kpi-color:#059669;--kpi-bg:#ECFDF5">
         <div class="kpi-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
         </div>
-        <div class="kpi-label">Users Read</div>
-        <div class="kpi-value" id="kpi-read">—</div>
-        <div class="kpi-sub" id="kpi-read-sub">0% of total</div>
+        <div class="kpi-label">Confirmed in Auth0</div>
+        <div class="kpi-value" id="kpi-confirmed">—</div>
+        <div class="kpi-sub" id="kpi-confirmed-sub">0% of total</div>
+      </div>
+
+      <div class="kpi-card" style="--kpi-color:#DC2626;--kpi-bg:#FEF2F2">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="kpi-label">Manual Review</div>
+        <div class="kpi-value" id="kpi-manual-kpi">—</div>
+        <div class="kpi-sub" id="kpi-manual-kpi-sub">0% of total · could not import</div>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="kpi-card" style="--kpi-color:#D97706;--kpi-bg:#FFFBEB">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div class="kpi-label">Pending</div>
+        <div class="kpi-value" id="kpi-pending">—</div>
+        <div class="kpi-sub" id="kpi-pending-sub">not yet confirmed in Auth0</div>
       </div>
 
       <div class="kpi-card" style="--kpi-color:#7C3AED;--kpi-bg:#F5F3FF">
-        <div class="kpi-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-          </svg>
-        </div>
-        <div class="kpi-label">Chunks Processed</div>
-        <div class="kpi-value" id="kpi-chunks">—</div>
-        <div class="kpi-sub" id="kpi-chunks-sub">of 0 total chunks</div>
-      </div>
-
-      <div class="kpi-card" style="--kpi-color:#D97706;--kpi-bg:#FFFBEB">
         <div class="kpi-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -836,6 +986,21 @@ select.no-pl { padding-left: 10px; }
         <div class="kpi-label">Duration</div>
         <div class="kpi-value" id="kpi-duration" style="font-size:22px">—</div>
         <div class="kpi-sub" id="kpi-duration-sub">not yet started</div>
+      </div>
+    </div>
+
+    <!-- Migration Outcome breakdown -->
+    <div class="outcome-card">
+      <div class="outcome-header">Migration Outcome</div>
+      <div class="outcome-track">
+        <div class="outcome-seg confirmed" id="outcome-confirmed" style="width:0%" title="Confirmed in Auth0"></div>
+        <div class="outcome-seg manual"    id="outcome-manual"    style="width:0%" title="Manual Review"></div>
+        <div class="outcome-seg pending"   id="outcome-pending"   style="width:100%" title="Pending"></div>
+      </div>
+      <div class="outcome-legend">
+        <span class="leg-item leg-confirmed"><span class="leg-dot"></span>Confirmed <span class="leg-val" id="leg-confirmed-val">0</span></span>
+        <span class="leg-item leg-manual"><span class="leg-dot"></span>Manual Review <span class="leg-val" id="leg-manual-val">0</span></span>
+        <span class="leg-item leg-pending"><span class="leg-dot"></span>Pending <span class="leg-val" id="leg-pending-val">—</span></span>
       </div>
     </div>
 
@@ -985,11 +1150,6 @@ select.no-pl { padding-left: 10px; }
     <!-- Bottom stats -->
     <div class="bottom-stats">
       <div class="info-card">
-        <div class="info-card-label">Manual Review</div>
-        <div class="info-card-val" id="kpi-manual">0</div>
-        <div class="info-card-sub">users flagged for review</div>
-      </div>
-      <div class="info-card">
         <div class="info-card-label">Est. Time Remaining</div>
         <div class="info-card-val" id="kpi-eta">—</div>
         <div class="info-card-sub">at current rate</div>
@@ -1031,10 +1191,11 @@ select.no-pl { padding-left: 10px; }
         <input type="text" class="search-input" id="data-search" placeholder="Search by email, UID, name…" oninput="debounceSearch()" autocomplete="off">
       </div>
       <div class="filter-group">
-        <button class="filter-btn active" data-filter="all"          onclick="setFilter(this)">All</button>
-        <button class="filter-btn"        data-filter="imported"     onclick="setFilter(this)">Imported</button>
-        <button class="filter-btn"        data-filter="pending"      onclick="setFilter(this)">Pending</button>
-        <button class="filter-btn"        data-filter="email-change" onclick="setFilter(this)">Email Change</button>
+        <button class="filter-btn active" data-filter="all"           onclick="setFilter(this)">All</button>
+        <button class="filter-btn"        data-filter="confirmed"     onclick="setFilter(this)">Confirmed</button>
+        <button class="filter-btn"        data-filter="manual-review" onclick="setFilter(this)">Manual Review</button>
+        <button class="filter-btn"        data-filter="pending"       onclick="setFilter(this)">Pending</button>
+        <button class="filter-btn"        data-filter="email-change"  onclick="setFilter(this)">Email Change</button>
       </div>
     </div>
 
@@ -1074,8 +1235,81 @@ select.no-pl { padding-left: 10px; }
     <div class="page-header">
       <div>
         <div class="page-title">Manual Review</div>
-        <div class="page-meta" id="review-total-label">Users that could not be auto-imported</div>
+        <div class="page-meta" id="review-total-label">Loading…</div>
       </div>
+      <div class="page-actions">
+        <button class="btn btn-ghost" onclick="exportReviewCSV()" title="Export filtered results as CSV">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary stat pills — clickable filters -->
+    <div id="review-summary-strip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px;">
+      <div class="review-pill active" data-cat="all" onclick="setReviewFilter(this)">
+        <div class="rp-label">All Users</div>
+        <div class="rp-val" id="rp-all">—</div>
+      </div>
+      <div class="review-pill" data-cat="exceeded-retries" onclick="setReviewFilter(this)">
+        <div class="rp-label">Exceeded Retries</div>
+        <div class="rp-val" id="rp-exceeded-retries">0</div>
+      </div>
+      <div class="review-pill" data-cat="duplicate" onclick="setReviewFilter(this)">
+        <div class="rp-label">Duplicate User</div>
+        <div class="rp-val" id="rp-duplicate">0</div>
+      </div>
+      <div class="review-pill" data-cat="username-length" onclick="setReviewFilter(this)">
+        <div class="rp-label">Username Too Long</div>
+        <div class="rp-val" id="rp-username-length">0</div>
+      </div>
+      <div class="review-pill" data-cat="missing-field" onclick="setReviewFilter(this)">
+        <div class="rp-label">Missing / Non-Unique</div>
+        <div class="rp-val" id="rp-missing-field">0</div>
+      </div>
+      <div class="review-pill" data-cat="other" onclick="setReviewFilter(this)">
+        <div class="rp-label">Other</div>
+        <div class="rp-val" id="rp-other">0</div>
+      </div>
+    </div>
+
+    <!-- Breakdown chart + Language distribution -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="review-charts-row">
+      <div class="chart-card" style="margin-bottom:0">
+        <div class="chart-header">
+          <div class="chart-title">Failure Reason Breakdown</div>
+          <div class="chart-meta" id="review-chart-meta">—</div>
+        </div>
+        <div class="chart-wrap" style="height:160px">
+          <canvas id="review-reason-chart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-bottom:0">
+        <div class="chart-header">
+          <div class="chart-title">Language Distribution</div>
+          <div class="chart-meta" id="review-lang-meta">—</div>
+        </div>
+        <div class="chart-wrap" style="height:160px">
+          <canvas id="review-lang-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search toolbar -->
+    <div class="toolbar" style="margin-bottom:12px;">
+      <div class="search-wrap" style="max-width:380px">
+        <span class="search-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input type="text" class="search-input" id="review-search" placeholder="Search by email, username, name…" oninput="debounceReviewSearch()" autocomplete="off">
+      </div>
+      <div style="margin-left:auto;font-size:12px;color:var(--text-3)" id="review-filter-label"></div>
     </div>
 
     <div class="table-card">
@@ -1089,7 +1323,62 @@ select.no-pl { padding-left: 10px; }
               <th>First Name</th>
               <th>Last Name</th>
               <th>Language</th>
-              <th>Failure Reason</th>
+              <th style="position:relative">
+                <div style="display:flex;align-items:center;gap:5px">
+                  Failure Reason
+                  <button class="col-filter-btn" id="reason-filter-btn" onclick="toggleReasonDropdown(event)" title="Filter by category">
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M1 3h14l-5 6v5l-4-2V9L1 3z"/>
+                    </svg>
+                  </button>
+                </div>
+                <!-- Excel-style multi-select filter dropdown -->
+                <div id="reason-filter-dropdown" class="col-filter-dropdown" hidden>
+                  <input class="cfd-search" id="cfd-search" type="text" placeholder="Search…" oninput="filterCfdItems(this.value)" autocomplete="off">
+                  <div class="cfd-divider"></div>
+                  <!-- Select All row -->
+                  <label class="cfd-item" style="font-weight:600;border-bottom:1px solid var(--border)">
+                    <input type="checkbox" class="cfd-checkbox" id="cfd-select-all" onchange="onSelectAllChange()">
+                    <span class="cfd-label">(Select All)</span>
+                    <span class="cfd-count" id="cfd-count-all">—</span>
+                  </label>
+                  <label class="cfd-item" data-cat="exceeded-retries">
+                    <input type="checkbox" class="cfd-checkbox" value="exceeded-retries" onchange="onCfdChange()">
+                    <span class="cfd-dot" style="background:#D97706"></span>
+                    <span class="cfd-label">Exceeded Retries</span>
+                    <span class="cfd-count" id="cfd-count-exceeded-retries">0</span>
+                  </label>
+                  <label class="cfd-item" data-cat="duplicate">
+                    <input type="checkbox" class="cfd-checkbox" value="duplicate" onchange="onCfdChange()">
+                    <span class="cfd-dot" style="background:#2563EB"></span>
+                    <span class="cfd-label">Duplicate User</span>
+                    <span class="cfd-count" id="cfd-count-duplicate">0</span>
+                  </label>
+                  <label class="cfd-item" data-cat="username-length">
+                    <input type="checkbox" class="cfd-checkbox" value="username-length" onchange="onCfdChange()">
+                    <span class="cfd-dot" style="background:#7C3AED"></span>
+                    <span class="cfd-label">Username Too Long</span>
+                    <span class="cfd-count" id="cfd-count-username-length">0</span>
+                  </label>
+                  <label class="cfd-item" data-cat="missing-field">
+                    <input type="checkbox" class="cfd-checkbox" value="missing-field" onchange="onCfdChange()">
+                    <span class="cfd-dot" style="background:#DC2626"></span>
+                    <span class="cfd-label">Missing / Non-Unique</span>
+                    <span class="cfd-count" id="cfd-count-missing-field">0</span>
+                  </label>
+                  <label class="cfd-item" data-cat="other">
+                    <input type="checkbox" class="cfd-checkbox" value="other" onchange="onCfdChange()">
+                    <span class="cfd-dot" style="background:#8FA3B1"></span>
+                    <span class="cfd-label">Other</span>
+                    <span class="cfd-count" id="cfd-count-other">0</span>
+                  </label>
+                  <div class="cfd-divider"></div>
+                  <div class="cfd-footer">
+                    <button class="cfd-reset" onclick="resetCfd()">Reset</button>
+                    <button class="cfd-apply" id="cfd-apply-btn" onclick="applyReasonFilter()">Apply</button>
+                  </div>
+                </div>
+              </th>
               <th>Added At</th>
             </tr>
           </thead>
@@ -1160,6 +1449,64 @@ select.no-pl { padding-left: 10px; }
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeAddModal()">Cancel</button>
       <button class="btn btn-primary" onclick="submitAddUser()" id="add-submit-btn">Add to Redis</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Reset Confirmation Modal ──────────────────────────────────────── -->
+<div id="modal-reset" class="modal-overlay hidden" onclick="handleResetOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" style="color:var(--red)">Reset All Migration Data?</span>
+      <button class="modal-close" onclick="closeResetModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:12px;color:var(--text-2);font-size:13px;line-height:1.6;">
+        This permanently deletes all Redis migration state. The next run will start completely fresh — no resume, no checkpoint, no partial progress.
+      </p>
+      <ul style="list-style:none;margin-bottom:16px;display:flex;flex-direction:column;gap:4px;">
+        <li style="font-size:12px;color:var(--red);display:flex;gap:7px;"><span>×</span>All processed chunk IDs (checkpoint)</li>
+        <li style="font-size:12px;color:var(--red);display:flex;gap:7px;"><span>×</span>Auth0 job ID mappings</li>
+        <li style="font-size:12px;color:var(--red);display:flex;gap:7px;"><span>×</span>Success user SET (migration:success:users)</li>
+        <li style="font-size:12px;color:var(--red);display:flex;gap:7px;"><span>×</span>Manual review user SET (migration:manual:users)</li>
+        <li style="font-size:12px;color:var(--red);display:flex;gap:7px;"><span>×</span>Retry staging buffer and in-flight counter</li>
+        <li style="font-size:12px;color:var(--red);display:flex;gap:7px;"><span>×</span>Manual-review pending write buffer</li>
+        <li style="font-size:12px;color:var(--red);display:flex;gap:7px;"><span>×</span>Source email index HASH</li>
+        <li style="font-size:12px;color:var(--red);display:flex;gap:7px;"><span>×</span>All per-user retry counts</li>
+      </ul>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:16px;">
+        <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">To restart from scratch, run:</div>
+        <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--blue)">node src/index.js --fresh</code>
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text-2);">
+        <input type="checkbox" id="reset-drain-queues" style="width:15px;height:15px;accent-color:var(--red);cursor:pointer;">
+        Also drain BullMQ queues (import, status, retry)
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeResetModal()">Cancel</button>
+      <button id="reset-confirm-btn" class="btn" style="background:var(--red);color:#fff;border:none;" onclick="confirmReset()">Reset Everything</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Failure Reason Detail Modal ───────────────────────────────── -->
+<div id="modal-reason" class="modal-overlay hidden" onclick="if(event.target===this)closeReasonModal()">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title">Failure Reason</span>
+      <button class="modal-close" onclick="closeReasonModal()">×</button>
+    </div>
+    <div class="modal-body" style="padding-bottom:24px">
+      <!-- Category badge -->
+      <div id="reason-modal-badge" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-bottom:14px;border:1px solid transparent"></div>
+      <!-- User info strip -->
+      <div id="reason-modal-user" style="font-size:12px;color:var(--text-2);margin-bottom:14px;line-height:1.7"></div>
+      <!-- Full reason text -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px 14px">
+        <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Full Error Message</div>
+        <pre id="reason-modal-text" style="margin:0;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;color:var(--text-1);font-family:inherit"></pre>
+      </div>
     </div>
   </div>
 </div>
@@ -1249,8 +1596,8 @@ function clearMigrationCache() {
   setText('kpi-duration', '—');
   setText('kpi-duration-sub', 'not yet started');
   if (rateChart) {
-    rateChart.data.labels   = [];
     rateChart.data.datasets[0].data = [];
+    rateChart.data.datasets[1].data = [];
     rateChart.update('none');
   }
 }
@@ -1265,7 +1612,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const e = localStorage.getItem(LS_END_TS);
     if (s) migStartTs = parseInt(s, 10);
     if (e) migEndTs   = parseInt(e, 10);
-    if (migStartTs) updateDurationKPI('unknown');
+    if (migStartTs) updateDurationKPI('unknown', false);
   } catch {}
 
   // Restore persisted data before first network call
@@ -1304,7 +1651,7 @@ function switchView(name) {
   document.querySelector(`.nav-item[data-view="${name}"]`).classList.add('active');
 
   if (name === 'data')   { dataPage = 1; fetchUsers(); }
-  if (name === 'review') { reviewPage = 1; fetchReview(); }
+  if (name === 'review') { reviewPage = 1; fetchReview(); fetchReviewSummary(); }
 }
 
 // ── SSE live connection ─────────────────────────────────────────────
@@ -1337,21 +1684,24 @@ function connectSSE() {
 
 function updateKPIQuick(d) {
   if (!d) return;
-  const { source, chunks, rate, status } = d;
+  const { source, chunks, rate, status, importedInAuth0, manualInAuth0, pendingCount } = d;
+
+  const totalN     = source?.total     || 0;
+  const confirmedN = importedInAuth0   != null ? importedInAuth0  : null;
+  const manualN    = manualInAuth0     != null ? manualInAuth0    : null;
+  const pendingN   = pendingCount      != null ? pendingCount
+                   : (confirmedN != null && manualN != null)
+                     ? Math.max(0, totalN - confirmedN - manualN) : null;
 
   if (source) {
-    setText('kpi-total', fmt(source.total));
-    setText('kpi-read',  fmt(source.read));
-    const pct = source.total > 0 ? ((source.read / source.total) * 100).toFixed(1) : '0.0';
-    setText('kpi-read-sub', pct + '% of total');
+    setText('kpi-total', fmt(totalN));
+    const pct = totalN > 0 ? ((source.read / totalN) * 100).toFixed(1) : '0.0';
     setText('prog-read-pct', pct + '%');
     setBar('prog-read-bar', parseFloat(pct));
-    setText('prog-read-detail', fmt(source.read) + ' of ' + fmt(source.total) + ' users batched into chunks');
+    setText('prog-read-detail', fmt(source.read) + ' of ' + fmt(totalN) + ' users batched into chunks');
   }
 
   if (chunks) {
-    setText('kpi-chunks', fmt(chunks.processed));
-    setText('kpi-chunks-sub', 'of ' + fmt(chunks.total) + ' total chunks');
     const cp = chunks.total > 0 ? ((chunks.processed / chunks.total) * 100).toFixed(1) : '0.0';
     setText('prog-chunk-pct', cp + '%');
     setBar('prog-chunk-bar', parseFloat(cp));
@@ -1359,15 +1709,36 @@ function updateKPIQuick(d) {
   }
 
   if (rate) {
-    const upm = rate.usersPerMinute || 0;
-    recordRate(source?.read, upm);
+    recordRate(source?.read, rate.usersPerMinute || 0);
     applyRateKPI(rate, status);
+  }
+
+  if (confirmedN != null) {
+    const pct = totalN > 0 ? (Math.round((confirmedN / totalN) * 1000) / 10) : 0;
+    setText('kpi-confirmed', fmt(confirmedN));
+    setText('kpi-confirmed-sub', pct + '% of total');
+  }
+
+  if (manualN != null) {
+    const pct = totalN > 0 ? (Math.round((manualN / totalN) * 1000) / 10) : 0;
+    setText('kpi-manual-kpi', fmt(manualN));
+    setText('kpi-manual-kpi-sub', pct + '% of total · could not import');
+  }
+
+  if (pendingN != null) {
+    const pct = totalN > 0 ? (Math.round((pendingN / totalN) * 1000) / 10) : 0;
+    setText('kpi-pending', fmt(pendingN));
+    setText('kpi-pending-sub', pct + '% · not yet confirmed in Auth0');
+  }
+
+  if (confirmedN != null && manualN != null && pendingN != null && totalN > 0) {
+    updateOutcomeBar(confirmedN, manualN, pendingN, totalN);
   }
 
   if (status) {
     updateStatusBadge(status);
     trackMigrationTiming(status, source?.read || 0);
-    updateDurationKPI(status);
+    updateDurationKPI(status, d.scriptRunning);
   }
 }
 
@@ -1403,12 +1774,19 @@ function renderChartFromHistory() {
   const cutoff = now - chartWindowMin * 60_000;
   const visible = rateHistory.filter(p => p.t >= cutoff);
 
-  // Data as {x: timestamp, y: upm} for the time scale
+  // Raw series
   rateChart.data.datasets[0].data = visible.map(p => ({ x: p.t, y: p.upm }));
 
-  // Always pin the x-axis to the full selected window so the axis stretches
-  // even when there are only a few data points — this makes the dropdown
-  // visually change the chart immediately.
+  // 5-point moving average
+  const WIN = 5;
+  const avg = visible.map((p, i) => {
+    const slice = visible.slice(Math.max(0, i - WIN + 1), i + 1);
+    const mean  = slice.reduce((s, v) => s + v.upm, 0) / slice.length;
+    return { x: p.t, y: Math.round(mean) };
+  });
+  rateChart.data.datasets[1].data = avg;
+
+  // Always pin the x-axis to the full selected window
   rateChart.options.scales.x.min = cutoff;
   rateChart.options.scales.x.max = now;
 
@@ -1429,23 +1807,41 @@ function refreshDashboard() { fetchStats(); }
 
 function renderDashboard(d) {
   if (!d._savedAt) saveLastStats(d); // persist live data (skip if already a cached snapshot)
-  const { source, chunks, status, statusUpdatedAt, manualReviewCount, queues, rate } = d;
+  const { source, chunks, status, statusUpdatedAt, scriptRunning, manualReviewCount, queues, rate,
+          importedInAuth0, importedInAuth0Percent, manualInAuth0, pendingCount } = d;
 
-  // KPIs
-  setText('kpi-total', fmt(source.total));
-  setText('kpi-read',  fmt(source.read));
-  setText('kpi-read-sub', source.readPercent + '% of total');
-  setText('kpi-chunks', fmt(chunks.processed));
-  setText('kpi-chunks-sub', 'of ' + fmt(chunks.total) + ' total chunks');
+  const totalN     = source.total || 0;
+  const confirmedN = importedInAuth0  || 0;
+  const manualN    = manualInAuth0    || 0;
+  const pendingN   = pendingCount     != null ? pendingCount : Math.max(0, totalN - confirmedN - manualN);
+
+  // KPIs — Row 1
+  setText('kpi-total', fmt(totalN));
+
+  const confirmedPct = importedInAuth0Percent != null ? importedInAuth0Percent : 0;
+  setText('kpi-confirmed', fmt(confirmedN));
+  setText('kpi-confirmed-sub', confirmedPct + '% of total');
+
+  const manualPct = totalN > 0 ? (Math.round((manualN / totalN) * 1000) / 10) : 0;
+  setText('kpi-manual-kpi', fmt(manualN));
+  setText('kpi-manual-kpi-sub', manualPct + '% of total · could not import');
+
+  // KPIs — Row 2
+  const pendingPct = totalN > 0 ? (Math.round((pendingN / totalN) * 1000) / 10) : 0;
+  setText('kpi-pending', fmt(pendingN));
+  setText('kpi-pending-sub', pendingPct + '% · not yet confirmed in Auth0');
 
   const upm = rate.usersPerMinute || 0;
   recordRate(source.read, upm);
   applyRateKPI(rate, status);
 
+  // Outcome bar
+  updateOutcomeBar(confirmedN, manualN, pendingN, totalN);
+
   // Progress bars
   setText('prog-read-pct', source.readPercent + '%');
   setBar('prog-read-bar', source.readPercent);
-  setText('prog-read-detail', fmt(source.read) + ' of ' + fmt(source.total) + ' users batched into chunks');
+  setText('prog-read-detail', fmt(source.read) + ' of ' + fmt(totalN) + ' users batched into chunks');
 
   setText('prog-chunk-pct', chunks.processedPercent + '%');
   setBar('prog-chunk-bar', chunks.processedPercent);
@@ -1460,9 +1856,8 @@ function renderDashboard(d) {
   renderQueue('status', q.status);
   renderQueue('retry',  q.retry);
 
-  // Bottom stats
+  // Nav badge uses xlsx-backed count so it matches the Manual Review tab row count
   const mrCount = manualReviewCount || 0;
-  setText('kpi-manual', fmt(mrCount));
   const reviewBadge = document.getElementById('nav-review-badge');
   reviewBadge.textContent = mrCount > 0 ? mrCount : '0';
   reviewBadge.className = 'nav-badge' + (mrCount > 0 ? '' : ' zero');
@@ -1471,9 +1866,23 @@ function renderDashboard(d) {
   setText('kpi-status-ts', statusUpdatedAt ? new Date(statusUpdatedAt).toLocaleString() : '—');
 
   trackMigrationTiming(status, source.read);
-  updateDurationKPI(status);
+  updateDurationKPI(status, scriptRunning);
 
   setText('dash-last-refresh', 'Last updated: ' + new Date().toLocaleTimeString());
+}
+
+function updateOutcomeBar(confirmed, manual, pending, total) {
+  if (!total) return;
+  const cPct = (confirmed / total * 100).toFixed(1);
+  const mPct = (manual    / total * 100).toFixed(1);
+  const pPct = Math.max(0, 100 - parseFloat(cPct) - parseFloat(mPct)).toFixed(1);
+  const el = (id) => document.getElementById(id);
+  if (el('outcome-confirmed')) el('outcome-confirmed').style.width = cPct + '%';
+  if (el('outcome-manual'))    el('outcome-manual').style.width    = mPct + '%';
+  if (el('outcome-pending'))   el('outcome-pending').style.width   = pPct + '%';
+  if (el('leg-confirmed-val')) el('leg-confirmed-val').textContent = fmt(confirmed);
+  if (el('leg-manual-val'))    el('leg-manual-val').textContent    = fmt(manual);
+  if (el('leg-pending-val'))   el('leg-pending-val').textContent   = fmt(pending);
 }
 
 function updateStatusBadge(status) {
@@ -1546,7 +1955,7 @@ function trackMigrationTiming(status, offset) {
   }
 }
 
-function updateDurationKPI(status) {
+function updateDurationKPI(status, scriptRunning) {
   const isTerminal = status === 'completed' || status === 'completed_with_manual_review';
 
   if (migStartTs && migEndTs) {
@@ -1554,7 +1963,7 @@ function updateDurationKPI(status) {
     setText('kpi-duration-sub', 'total migration time');
   } else if (migStartTs && !isTerminal) {
     setText('kpi-duration', formatDuration(Date.now() - migStartTs));
-    setText('kpi-duration-sub', 'elapsed · running…');
+    setText('kpi-duration-sub', scriptRunning ? 'elapsed · running…' : 'elapsed · stopped');
   } else {
     setText('kpi-duration', '—');
     setText('kpi-duration-sub', 'not yet started');
@@ -1571,31 +1980,54 @@ function initChart() {
   rateChart = new Chart(ctx, {
     type: 'line',
     data: {
-      datasets: [{
-        label: 'Users/min',
-        data: [],           // {x: timestamp_ms, y: upm}
-        borderColor: '#3B82F6',
-        backgroundColor: 'rgba(59,130,246,.10)',
-        borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        pointBackgroundColor: '#3B82F6',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 1.5,
-        fill: true,
-        tension: 0,
-      }]
+      datasets: [
+        {
+          label: 'Users/min',
+          data: [],           // {x: timestamp_ms, y: upm}
+          borderColor: 'rgba(59,130,246,.55)',
+          backgroundColor: 'rgba(59,130,246,.07)',
+          borderWidth: 1.5,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#3B82F6',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1,
+          fill: true,
+          tension: 0.3,
+          order: 2,
+        },
+        {
+          label: '5-pt avg',
+          data: [],           // moving average
+          borderColor: '#10B981',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5, 3],
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: false,
+          tension: 0.4,
+          order: 1,
+        }
+      ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 300 },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: { color: textColor, font: { size: 11 }, boxWidth: 18, padding: 12 }
+        },
         tooltip: {
+          mode: 'index',
+          intersect: false,
           callbacks: {
             title: (items) => new Date(items[0].parsed.x).toLocaleTimeString(),
-            label: (item)  => '  ' + fmt(item.parsed.y) + ' users/min',
+            label: (item)  => '  ' + item.dataset.label + ': ' + fmt(item.parsed.y) + ' u/min',
           }
         }
       },
@@ -1722,7 +2154,7 @@ function renderUsersTable(d) {
   setText('data-total-label',
     searchTerm
       ? `${fmt(total)} results${searchLimited ? ' (search limited to first 10k records)' : ''}`
-      : `${fmt(total)} total records · ${fmt(readOffset)} imported`
+      : `${fmt(total)} total records · ${fmt(readOffset)} read into chunks`
   );
 
   if (!users || users.length === 0) {
@@ -1741,8 +2173,10 @@ function renderUsersTable(d) {
       </tr>`;
     }
     const badge = u._imported
-      ? '<span class="badge badge-imported">Imported</span>'
-      : '<span class="badge badge-pending">Pending</span>';
+      ? '<span class="badge badge-imported">Confirmed</span>'
+      : u._manualReview
+        ? '<span class="badge badge-manual">Manual Review</span>'
+        : '<span class="badge badge-pending">Pending</span>';
     const emailChangeBadge = u.requireEmailChange === true
       ? `<span class="badge" style="background:var(--amber-lt);color:var(--amber);font-size:11px">Required</span>`
       : `<span style="color:var(--text-3);font-size:12px">—</span>`;
@@ -1782,11 +2216,268 @@ function debounceSearch() {
 }
 
 // ── Manual Review ───────────────────────────────────────────────────
+let reviewFilter    = 'all';
+let reviewSearch    = '';
+let reviewSearchTO  = null;
+let reviewReasonChart = null;
+let reviewLangChart   = null;
+
+// Maps failure_reason text to a badge colour class
+const REVIEW_CAT_COLORS = {
+  'exceeded-retries': 'var(--amber)',
+  'duplicate':        'var(--blue)',
+  'username-length':  'var(--purple)',
+  'missing-field':    'var(--red)',
+  'other':            'var(--text-3)',
+};
+
+function categoriseReasonFE(reason) {
+  const r = String(reason || '');
+  if (/exceeded.*retr|max.*retr/i.test(r))                   return 'exceeded-retries';
+  if (/DUPLICATED_USER|ALREADY_EXISTS/i.test(r))              return 'duplicate';
+  if (/MAX_LENGTH|username.*long|too.*long/i.test(r))         return 'username-length';
+  if (/ONE_OF_MISSING|MISSING_REQUIRED|NON_UNIQUE/i.test(r))  return 'missing-field';
+  return 'other';
+}
+
+async function fetchReviewSummary() {
+  try {
+    const r = await fetch('/api/manual-review/summary');
+    const d = await r.json();
+    if (d.error) return;
+
+    // Update pills
+    setText('rp-all', fmt(d.total));
+    const cats = ['exceeded-retries','duplicate','username-length','missing-field','other'];
+    for (const c of cats) {
+      const el = document.getElementById('rp-' + c);
+      if (el) el.textContent = fmt(d.byCategory[c] || 0);
+      // Also update the column-header dropdown counts
+      const cfd = document.getElementById('cfd-count-' + c);
+      if (cfd) cfd.textContent = fmt(d.byCategory[c] || 0);
+    }
+    const cfdAll = document.getElementById('cfd-count-all');
+    if (cfdAll) cfdAll.textContent = fmt(d.total);
+
+    // Breakdown chart
+    renderReviewReasonChart(d.byCategory, d.total);
+
+    // Language chart
+    renderReviewLangChart(d.byLanguage);
+
+    setText('review-chart-meta', fmt(d.total) + ' total');
+  } catch { /* ignore */ }
+}
+
+function renderReviewReasonChart(byCategory, total) {
+  const ctx = document.getElementById('review-reason-chart').getContext('2d');
+  const labels = ['Exceeded Retries','Duplicate User','Username Too Long','Missing / Non-Unique','Other'];
+  const keys   = ['exceeded-retries','duplicate','username-length','missing-field','other'];
+  const data   = keys.map(k => byCategory[k] || 0);
+  const colors = ['#D97706','#2563EB','#7C3AED','#DC2626','#8FA3B1'];
+
+  if (reviewReasonChart) reviewReasonChart.destroy();
+  reviewReasonChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: colors, borderWidth: 2,
+                   borderColor: getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#fff' }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { position: 'right', labels: { font: { size: 11 }, padding: 10,
+          color: getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim() || '#666',
+          boxWidth: 10 }},
+        tooltip: { callbacks: {
+          label: (item) => ' ' + item.label + ': ' + fmt(item.raw) +
+                           (total > 0 ? ' (' + (item.raw / total * 100).toFixed(1) + '%)' : ''),
+        }},
+      },
+      onClick: (e, elements) => {
+        if (!elements.length) return;
+        const cat = keys[elements[0].index];
+        const pill = document.querySelector(`.review-pill[data-cat="${cat}"]`);
+        if (pill) setReviewFilter(pill);
+      },
+    },
+  });
+}
+
+function renderReviewLangChart(byLanguage) {
+  const ctx = document.getElementById('review-lang-chart').getContext('2d');
+  const sorted = Object.entries(byLanguage).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  const labels = sorted.map(([l]) => l || 'Unknown');
+  const data   = sorted.map(([,v]) => v);
+  const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim() || '#666';
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#eee';
+
+  if (reviewLangChart) reviewLangChart.destroy();
+  reviewLangChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: 'rgba(37,99,235,.6)', borderRadius: 4,
+                   borderSkipped: false }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: (item) => ' ' + fmt(item.raw) + ' users' }}},
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 } } },
+        y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 },
+             callback: (v) => fmt(v) }, beginAtZero: true },
+      },
+    },
+  });
+  const langs = Object.keys(byLanguage).length;
+  setText('review-lang-meta', langs + ' language' + (langs !== 1 ? 's' : ''));
+}
+
+function setReviewFilter(pill) {
+  document.querySelectorAll('.review-pill').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+  reviewFilter = pill.dataset.cat;
+  reviewPage   = 1;
+  syncReasonDropdown();
+  fetchReview();
+}
+
+// ── Column header dropdown — Excel-style multi-select ──────────────
+// Excel model: all checked = no filter (show all); subset checked = filter to those.
+// _cfdPending tracks the working state while the dropdown is open.
+const CDF_ALL_CATS = ['exceeded-retries','duplicate','username-length','missing-field','other'];
+let _cfdPending = new Set(CDF_ALL_CATS); // default = all checked = no filter
+
+function _cfdCatBoxes() {
+  return [...document.querySelectorAll('.cfd-checkbox:not(#cfd-select-all)')];
+}
+
+function _cfdUpdateSelectAll() {
+  const sa = document.getElementById('cfd-select-all');
+  if (!sa) return;
+  const visible = _cfdCatBoxes().filter(cb => cb.closest('.cfd-item').style.display !== 'none');
+  const checked = visible.filter(cb => cb.checked).length;
+  sa.checked       = checked === visible.length;
+  sa.indeterminate = checked > 0 && checked < visible.length;
+}
+
+// Open / close toggle
+function toggleReasonDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('reason-filter-dropdown');
+  if (dd.hidden) {
+    // Seed from committed filter; all = every box checked
+    _cfdPending = reviewFilter === 'all'
+      ? new Set(CDF_ALL_CATS)
+      : new Set(reviewFilter.split(',').filter(Boolean));
+    _syncCfdCheckboxes();
+    dd.hidden = false;
+    const s = document.getElementById('cfd-search');
+    s.value = '';
+    filterCfdItems('');
+    s.focus();
+  } else {
+    dd.hidden = true;
+  }
+}
+
+function closeReasonDropdown() {
+  const dd = document.getElementById('reason-filter-dropdown');
+  if (dd) dd.hidden = true;
+}
+
+// Individual category checkbox changed
+function onCfdChange() {
+  _cfdPending = new Set(_cfdCatBoxes().filter(cb => cb.checked).map(cb => cb.value));
+  _cfdUpdateSelectAll();
+}
+
+// "(Select All)" checkbox toggled
+function onSelectAllChange() {
+  const checked = document.getElementById('cfd-select-all').checked;
+  _cfdCatBoxes().forEach(cb => {
+    if (cb.closest('.cfd-item').style.display !== 'none') cb.checked = checked;
+  });
+  _cfdPending = checked ? new Set(CDF_ALL_CATS) : new Set();
+}
+
+// Reset button — restore all-checked state and apply immediately
+function resetCfd() {
+  _cfdPending = new Set(CDF_ALL_CATS);
+  _syncCfdCheckboxes();
+  applyReasonFilter();
+}
+
+// Commit and fetch
+function applyReasonFilter() {
+  closeReasonDropdown();
+  // All cats checked (or none) → no filter
+  const allChecked = CDF_ALL_CATS.every(c => _cfdPending.has(c));
+  reviewFilter = (allChecked || _cfdPending.size === 0) ? 'all' : [..._cfdPending].join(',');
+  reviewPage   = 1;
+
+  // Sync pill strip
+  document.querySelectorAll('.review-pill').forEach(p => {
+    p.classList.toggle('active', reviewFilter === 'all' && p.dataset.cat === 'all');
+  });
+  // Funnel button turns blue when filter is narrowed
+  const btn = document.getElementById('reason-filter-btn');
+  if (btn) btn.classList.toggle('active', reviewFilter !== 'all');
+
+  fetchReview();
+}
+
+// Push checkbox states from _cfdPending into the DOM
+function _syncCfdCheckboxes() {
+  _cfdCatBoxes().forEach(cb => { cb.checked = _cfdPending.has(cb.value); });
+  _cfdUpdateSelectAll();
+}
+
+// Keep funnel button in sync after pill clicks
+function syncReasonDropdown() {
+  const btn = document.getElementById('reason-filter-btn');
+  if (btn) btn.classList.toggle('active', reviewFilter !== 'all');
+}
+
+// Live search — hide non-matching rows
+function filterCfdItems(q) {
+  const lq = q.toLowerCase();
+  document.querySelectorAll('#reason-filter-dropdown .cfd-item').forEach(el => {
+    const label = el.querySelector('.cfd-label');
+    if (!label) return;
+    el.style.display = (!lq || label.textContent.toLowerCase().includes(lq)) ? '' : 'none';
+  });
+  _cfdUpdateSelectAll();
+}
+
+// Close on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#reason-filter-dropdown') && !e.target.closest('#reason-filter-btn')) {
+    closeReasonDropdown();
+  }
+});
+
+function debounceReviewSearch() {
+  clearTimeout(reviewSearchTO);
+  reviewSearchTO = setTimeout(() => {
+    reviewSearch = document.getElementById('review-search').value.trim();
+    reviewPage   = 1;
+    fetchReview();
+  }, 400);
+}
+
 async function fetchReview() {
   document.getElementById('review-tbody').innerHTML =
     '<tr><td colspan="8" class="table-empty"><div class="table-empty-text">Loading…</div></td></tr>';
   try {
-    const r = await fetch(`/api/manual-review?page=${reviewPage}&limit=20`);
+    // reviewFilter is 'all' or comma-separated cats e.g. 'exceeded-retries,duplicate'
+    const params = new URLSearchParams({ page: reviewPage, limit: 20, filter: reviewFilter || 'all' });
+    if (reviewSearch) params.set('search', reviewSearch);
+    const r = await fetch('/api/manual-review?' + params);
     const d = await r.json();
     renderReviewTable(d);
   } catch (e) {
@@ -1796,14 +2487,27 @@ async function fetchReview() {
 }
 
 function renderReviewTable(d) {
-  const { total, page, limit, totalPages, users } = d;
+  const { total, grandTotal, page, limit, totalPages, users } = d;
   const start = (page - 1) * limit;
+  const gt = grandTotal != null ? grandTotal : total;
 
-  setText('review-total-label', fmt(total) + ' users flagged for manual review');
+  // Header meta
+  const isFiltered = reviewFilter && reviewFilter !== 'all';
+  const filterLabel = isFiltered ? ` · filtered to ${fmt(total)} of ${fmt(gt)}` : '';
+  setText('review-total-label', fmt(gt) + ' users flagged for manual review' + filterLabel);
+  if (reviewSearch || isFiltered) {
+    const catCount = isFiltered ? reviewFilter.split(',').length : 0;
+    const catLabel = catCount > 1 ? `${catCount} categories` : isFiltered ? '1 category' : '';
+    setText('review-filter-label', reviewSearch
+      ? `"${reviewSearch}"${catLabel ? ' · ' + catLabel : ''} · ${fmt(total)} result${total !== 1 ? 's' : ''}`
+      : `${catLabel} · ${fmt(total)} of ${fmt(gt)}`);
+  } else {
+    setText('review-filter-label', '');
+  }
 
   if (!users || users.length === 0) {
     document.getElementById('review-tbody').innerHTML =
-      '<tr><td colspan="8" class="table-empty"><div class="table-empty-icon">✅</div><div class="table-empty-text">No users in manual review — great!</div></td></tr>';
+      '<tr><td colspan="8" class="table-empty"><div class="table-empty-icon">✅</div><div class="table-empty-text">No users match this filter</div></td></tr>';
     setText('review-page-info', '');
     document.getElementById('review-page-btns').innerHTML = '';
     return;
@@ -1811,6 +2515,15 @@ function renderReviewTable(d) {
 
   const rows = users.map((u, i) => {
     const addedAt = u.added_at ? new Date(u.added_at).toLocaleString() : '—';
+    const cat  = u._category || categoriseReasonFE(u.failure_reason);
+    const clr  = REVIEW_CAT_COLORS[cat] || 'var(--text-3)';
+    const reasonShort = String(u.failure_reason || '').split('\n')[0].slice(0, 72);
+    const isTruncated = reasonShort.length < String(u.failure_reason || '').length || String(u.failure_reason || '').includes('\n');
+    // Encode the full user payload for the modal (base64 to avoid quote/injection issues)
+    const payload = btoa(unescape(encodeURIComponent(JSON.stringify({
+      email: u.email, username: u.username, given_name: u.given_name,
+      family_name: u.family_name, failure_reason: u.failure_reason, _category: cat,
+    }))));
     return `<tr>
       <td class="text-muted mono" style="font-size:11px">${start + i + 1}</td>
       <td class="mono">${esc(u.email || '')}</td>
@@ -1818,7 +2531,10 @@ function renderReviewTable(d) {
       <td>${esc(u.given_name  || '')}</td>
       <td>${esc(u.family_name || '')}</td>
       <td>${esc(u.language_preference || '')}</td>
-      <td style="font-size:12px;color:var(--red)">${esc(u.failure_reason || '')}</td>
+      <td style="cursor:pointer" onclick="openReasonModal(this)" data-payload="${payload}">
+        <span style="font-size:12px;color:${clr}">${esc(reasonShort)}${isTruncated ? '<span style="color:var(--text-3)">…</span>' : ''}</span>
+        ${isTruncated ? `<span style="font-size:10px;color:var(--blue);margin-left:4px;text-decoration:underline;text-underline-offset:2px">more</span>` : ''}
+      </td>
       <td style="font-size:11px;color:var(--text-3)">${addedAt}</td>
     </tr>`;
   }).join('');
@@ -1826,6 +2542,36 @@ function renderReviewTable(d) {
   document.getElementById('review-tbody').innerHTML = rows;
   setText('review-page-info', `Showing ${start + 1}–${Math.min(start + users.length, total)} of ${fmt(total)}`);
   renderPagination('review-page-btns', page, totalPages, (p) => { reviewPage = p; fetchReview(); });
+}
+
+// ── CSV Export ──────────────────────────────────────────────────────
+async function exportReviewCSV() {
+  try {
+    // Fetch all rows for current filter (large limit)
+    const params = new URLSearchParams({ page: 1, limit: 9999, filter: reviewFilter || 'all' });
+    if (reviewSearch) params.set('search', reviewSearch);
+    const r = await fetch('/api/manual-review?' + params);
+    const d = await r.json();
+    if (!d.users || d.users.length === 0) { showToast('No data to export', ''); return; }
+
+    const headers = ['Email','Username (UID)','First Name','Last Name','Language','Failure Reason','Added At'];
+    const rows = d.users.map(u => [
+      u.email, u.username, u.given_name, u.family_name,
+      u.language_preference, u.failure_reason,
+      u.added_at ? new Date(u.added_at).toLocaleString() : '',
+    ].map(v => '"' + String(v || '').replace(/"/g, '""') + '"').join(','));
+
+    const csv = [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), { href: url, download: 'manual-review-export.csv' });
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    showToast('Exported ' + fmt(d.users.length) + ' rows', 'success');
+  } catch (e) {
+    showToast('Export failed: ' + e.message, 'error');
+  }
 }
 
 // ── Pagination ──────────────────────────────────────────────────────
@@ -1971,6 +2717,84 @@ function esc(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ── Failure Reason Detail Modal ──────────────────────────────────────
+const CAT_BADGE_STYLES = {
+  'exceeded-retries': { bg: 'rgba(217,119,6,.12)',  border: 'rgba(217,119,6,.35)',  color: '#D97706', label: 'Exceeded Retries'       },
+  'duplicate':        { bg: 'rgba(37,99,235,.10)',   border: 'rgba(37,99,235,.3)',   color: '#2563EB', label: 'Duplicate User'          },
+  'username-length':  { bg: 'rgba(124,58,237,.10)',  border: 'rgba(124,58,237,.3)',  color: '#7C3AED', label: 'Username Too Long'       },
+  'missing-field':    { bg: 'rgba(220,38,38,.10)',   border: 'rgba(220,38,38,.3)',   color: '#DC2626', label: 'Missing / Non-Unique'    },
+  'other':            { bg: 'rgba(143,163,177,.12)', border: 'rgba(143,163,177,.4)', color: '#6B7F8D', label: 'Other'                  },
+};
+
+function openReasonModal(cell) {
+  try {
+    const u = JSON.parse(decodeURIComponent(escape(atob(cell.dataset.payload))));
+    const style = CAT_BADGE_STYLES[u._category] || CAT_BADGE_STYLES['other'];
+
+    const badge = document.getElementById('reason-modal-badge');
+    badge.textContent = style.label;
+    badge.style.background   = style.bg;
+    badge.style.borderColor  = style.border;
+    badge.style.color        = style.color;
+
+    document.getElementById('reason-modal-user').innerHTML =
+      `<b>Email:</b> ${esc(u.email || '—')}<br>` +
+      `<b>Username:</b> ${esc(u.username || '—')}<br>` +
+      `<b>Name:</b> ${esc([u.given_name, u.family_name].filter(Boolean).join(' ') || '—')}`;
+
+    document.getElementById('reason-modal-text').textContent = u.failure_reason || '(no reason recorded)';
+
+    document.getElementById('modal-reason').classList.remove('hidden');
+  } catch { /* ignore bad payload */ }
+}
+
+function closeReasonModal() {
+  document.getElementById('modal-reason').classList.add('hidden');
+}
+
+// Close reason modal on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeReasonModal(); closeReasonDropdown(); }
+});
+
+// ── Reset All Data ──────────────────────────────────────────────────
+function openResetModal() {
+  document.getElementById('reset-drain-queues').checked = false;
+  document.getElementById('modal-reset').classList.remove('hidden');
+}
+
+function closeResetModal() {
+  document.getElementById('modal-reset').classList.add('hidden');
+}
+
+function handleResetOverlayClick(e) {
+  if (e.target === document.getElementById('modal-reset')) closeResetModal();
+}
+
+async function confirmReset() {
+  const drainQueues = document.getElementById('reset-drain-queues').checked;
+  const btn = document.getElementById('reset-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Resetting…';
+  try {
+    const r = await fetch('/api/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ drainQueues }),
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || 'Reset failed');
+    closeResetModal();
+    clearMigrationCache();
+    showToast('All migration data reset · Ready for a fresh run', 'success');
+    fetchStats();
+  } catch (e) {
+    showToast('Reset failed: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Reset Everything';
+  }
 }
 </script>
 </body>

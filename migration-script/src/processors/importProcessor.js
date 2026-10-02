@@ -4,7 +4,7 @@ const { statusQueue } = require('../queues');
 const config = require('../config');
 const logger = require('../logger');
 
-async function importProcessor(job) {
+async function importProcessor(job, token) {
   const { chunkId, chunkPath, userCount } = job.data;
 
   // Idempotency guard: if this chunk was already successfully processed, skip
@@ -28,6 +28,9 @@ async function importProcessor(job) {
     }
     await new Promise(r => setTimeout(r, SLOT_POLL_MS));
     slotWaits++;
+    // Extend the BullMQ lock on every wait iteration so it doesn't expire while
+    // this job is parked waiting for a free Auth0 slot.
+    await job.extendLock(token, 300_000).catch(() => {});
   }
   if (slotWaits > 0) {
     logger.info('Auth0 import slot acquired', { chunkId, waitedMs: slotWaits * SLOT_POLL_MS });
@@ -39,7 +42,7 @@ async function importProcessor(job) {
   let auth0Job;
   try {
     auth0Job = await auth0Service.createImportJob(chunkPath, {
-      upsert: true,
+      upsert: config.migration.importUpsert,
       externalId: chunkId,
     });
   } catch (err) {
@@ -61,10 +64,14 @@ async function importProcessor(job) {
   await checkpointService.trackActiveAuth0Job(auth0Job.id);
   await job.updateProgress(80);
 
+  // jobId uses attempt index (0) so each re-queue hop has a unique id.
+  // This prevents BullMQ from silently dropping the next requeuePoll add
+  // (which would use id poll-X-1) just because the current active poll
+  // job (poll-X-0) hasn't completed yet. See statusProcessor.requeuePoll.
   await statusQueue.add(
     'poll-status',
     { chunkId, auth0JobId: auth0Job.id, attempts: 0 },
-    { delay: config.migration.statusPollIntervalMs }
+    { delay: config.migration.statusPollIntervalMs, jobId: `poll-${auth0Job.id}-0`, removeOnComplete: true }
   );
 
   await job.updateProgress(100);

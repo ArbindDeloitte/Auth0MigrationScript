@@ -22,6 +22,12 @@ const config = {
     manualReviewFile: process.env.MANUAL_REVIEW_FILE || './output/manual-review.xlsx',
     statusPollIntervalMs: parseInt(process.env.STATUS_POLL_INTERVAL_MS || '30000', 10),
     statusPollMaxAttempts: parseInt(process.env.STATUS_POLL_MAX_ATTEMPTS || '240', 10),
+    // false = existing users surface as ALREADY_EXISTS errors (accurate tracking)
+    // true  = existing users are silently updated (overwrites metadata)
+    importUpsert: process.env.AUTH0_IMPORT_UPSERT === 'true',
+    // Auth0 enforces a username length limit (default 15). Users whose username
+    // exceeds this are skipped from the import and sent to manual review.
+    usernameMaxLength: parseInt(process.env.AUTH0_USERNAME_MAX_LENGTH || '15', 10),
   },
   redis: {
     host: process.env.REDIS_HOST || '127.0.0.1',

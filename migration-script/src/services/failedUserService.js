@@ -88,13 +88,31 @@ class FailedUserService {
         });
       }
 
-      // Atomic write: write to temp file then rename
+      // Atomic write: write to temp file then rename.
+      // On Windows, unlink fails with EBUSY if the file is open in Excel.
+      // Retry up to 5 times (15 s total) so the user has time to close it.
       const tmpPath = this.filePath + '.tmp';
       await workbook.xlsx.writeFile(tmpPath);
 
-      // Windows-safe atomic swap
-      if (fs.existsSync(this.filePath)) fs.unlinkSync(this.filePath);
-      fs.renameSync(tmpPath, this.filePath);
+      let swapped = false;
+      for (let attempt = 0; attempt < 5 && !swapped; attempt++) {
+        try {
+          if (fs.existsSync(this.filePath)) fs.unlinkSync(this.filePath);
+          fs.renameSync(tmpPath, this.filePath);
+          swapped = true;
+        } catch (swapErr) {
+          if ((swapErr.code === 'EBUSY' || swapErr.code === 'EPERM') && attempt < 4) {
+            logger.warn(
+              'manual-review.xlsx is locked — please close it in Excel. Retrying in 3 s…',
+              { attempt: attempt + 1, maxAttempts: 5 }
+            );
+            await new Promise(r => setTimeout(r, 3000));
+          } else {
+            try { fs.unlinkSync(tmpPath); } catch { /* ignore tmp cleanup error */ }
+            throw swapErr;
+          }
+        }
+      }
 
       logger.warn('Users added to manual review Excel', {
         count: users.length,

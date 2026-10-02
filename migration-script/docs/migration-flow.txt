@@ -1,0 +1,187 @@
+flowchart TD
+    START(["🚀 node src/index.js — start point"])
+
+    subgraph IDX["📄 index.js — Orchestration"]
+        IDX_PRE["preflight() — verify Auth0 token and Redis source count"]
+        IDX_FLUSH_S["flushManualReviewPending() startup — pop Redis pending buffer to Excel"]
+        IDX_VFLAG{"--verify flag?"}
+        IDX_VONLY["Verify-only mode — no chunks, no Auth0 calls"]
+        IDX_DETECT["detectAndRecoverGap() — skip if prior jobs in queues\ngap = total minus imported minus manual"]
+        IDX_ORPHAN["recoverOrphanedChunks() — scan chunks dir for prior-run files\nlook up saved Auth0 job IDs"]
+        IDX_ENQUEUE["importQueue.addBulk — new chunks\nstatusQueue for orphans with Auth0 IDs"]
+        IDX_WAIT["waitForCompletion() — 60s poll\ncheck all 3 queues + batchInFlight + staging"]
+        IDX_ONCOMP["onComplete() — final gap check\nrequeue gap users if gap exists\nflushManualReviewPending + setMigrationStatus"]
+        IDX_FLUSH_F["flushManualReviewPending() final — flush remaining buffer to Excel"]
+        IDX_DONE["gracefulShutdown() — 15s drain timeout per worker\nclose workers, queues, Redis"]
+    end
+
+    subgraph RDSVC["📄 redisDataService.js — Source Data"]
+        RD_STREAM["streamUsers() — batch LRANGE on migration:source:users\nsaves offset after each batch"]
+        RD_MAP["mapSourceToAuth0(record) — map names, uid, email\nparse LDAP hash to custom_password_hash\nlanguage to user_metadata"]
+        RD_CHUNK["createChunksFromRedis(chunksDir) — stream users to 480KB JSON files\nusername over limit goes to pending buffer\nbulkIndexUsersByEmail to Redis HASH"]
+    end
+
+    subgraph CKPT["📄 checkpointService.js — Redis State Store"]
+        direction LR
+        CK_SUC[("migration:success:users SET\nemail per imported user")]
+        CK_MAN[("migration:manual:users SET\nemail per manual review user")]
+        CK_PEND[("migration:manual-review:pending LIST\nJSON buffer — user + reason")]
+        CK_STAGE[("migration:retry:staging LIST\nusers awaiting next batch")]
+        CK_EIDX[("migration:source:email:index HASH\nemail to full user JSON\npreserves custom_password_hash")]
+        CK_SLOTS[("migration:active:auth0:jobs SET\nactive slot counter")]
+        CK_INFLT[("migration:retry:batch:inflight COUNTER\npop-to-queued gap guard")]
+    end
+
+    subgraph BQSVG["📄 queues/index.js — BullMQ Queues"]
+        BQ_IMP[["importQueue — auth0-import\n5 attempts, 60s exp backoff\nconcurrency = MAX_CONCURRENT_JOBS"]]
+        BQ_STAT[["statusQueue — auth0-status\n3 attempts, 10s exp backoff\nconcurrency = MAX x 2"]]
+        BQ_RETRY[["retryQueue — auth0-retry-users\n1 attempt, concurrency 20"]]
+    end
+
+    subgraph IMPW["📄 importProcessor.js"]
+        IW_SLOT["① Wait for Auth0 slot — getActiveAuth0JobCount every 10s\nextend BullMQ lock on each wait"]
+        IW_POST["② auth0Service.createImportJob(chunkPath)\nPOST /api/v2/jobs/users-imports — max 480KB"]
+        IW_TRACK["③ storeAuth0JobId + trackActiveAuth0Job\nincrement active slot counter"]
+        IW_POLL["④ statusQueue.add('poll-status' with delay)\nschedule first status check"]
+    end
+
+    subgraph STATW["📄 statusProcessor.js"]
+        SW_FETCH["auth0Service.getJobStatus(auth0JobId)"]
+        SW_RUN{"Auth0 job\nstill running?"}
+        SW_REQUEUE["requeuePoll() — re-add with delay\nnew jobId per hop"]
+        SW_DONE["releaseActiveAuth0Job() — minus 1 slot\nloadChunkUserMap(chunkId)"]
+        SW_IDX["getIndexedUsersByEmails() — batch HMGET email index\n3-way fallback: chunk file, email index, error.user"]
+        SW_ERRS["auth0Service.getJobErrors()\nAuth0 strips custom_password_hash here"]
+        SW_CLASS{"Classify\neach error"}
+        SW_EXIST["isAlreadyExistsError — ALREADY_EXISTS, DUPLICATED_USER\nrecordSuccessfulUsers + pushToManualReviewPending"]
+        SW_DMR["isDirectManualReviewError — ONE_OF_MISSING, NON_UNIQUE\npushToManualReviewPending — bypass retry queue"]
+        SW_RETRY["Recoverable error — retryQueue.addBulk\noriginalUser includes password hash"]
+        SW_SUCC["recordChunkSuccesses — chunk users minus failures\nwrite to success SET"]
+    end
+
+    subgraph RETW["📄 retryProcessor.js"]
+        RW_UNREC{"isUnrecoverableError?\nMAX_LENGTH, MISSING_REQUIRED\nONE_OF_MISSING, NON_UNIQUE\nDUPLICATED_USER, ALREADY_EXISTS"}
+        RW_CNT["incrementUserRetryCount(email)\nmigration:retry:count:{email}"]
+        RW_MAX{"retryCount exceeds\nmaxUserRetries?"}
+        RW_STAGE["pushToRetryStaging(user)\nRPUSH to migration:retry:staging"]
+        RW_FULL{"stagingCount\n>= 400?"}
+        RW_FLUSH["flushRetryStagingBatch(false, job, token)"]
+    end
+
+    subgraph BATW["📄 retryBatchService.js"]
+        BW_POP["popRetryStagingBatch(400) — LPOP up to 400 from staging"]
+        BW_RACE{"fewer than 20 users\nand not forceFlush?"}
+        BW_BACK["pushBatchToRetryStaging() — concurrent flush race\npush back to staging"]
+        BW_DEDUP["Deduplicate by email — handles restart duplicates"]
+        BW_FLT["incrementBatchInFlight() — blocks premature completion signal"]
+        BW_FILE["fs.writeFileSync — retry-batch-uuid.json"]
+        BW_SLOT["Wait for Auth0 slot — extend callerJob lock on each wait"]
+        BW_POST["auth0Service.createImportJob(batchPath)"]
+        BW_QPOLL["statusQueue.add('poll-status') — loops back through statusProcessor"]
+        BW_DEC["decrementBatchInFlight()"]
+    end
+
+    subgraph A0SVC["📄 auth0Service.js — Auth0 Management API"]
+        A0_TOK["_getToken() — client credentials OAuth\ncached until expiry"]
+        A0_CREATE["createImportJob(filePath, opts)\nPOST /api/v2/jobs/users-imports\nretries 429 up to 8x via Retry-After header"]
+        A0_STAT["getJobStatus(id) — GET /api/v2/jobs/{id}\nreturns: pending, processing, completed, failed"]
+        A0_ERRS["getJobErrors(id) — GET /api/v2/jobs/{id}/errors\nAuth0 security policy strips custom_password_hash"]
+    end
+
+    subgraph XLSVC["📄 failedUserService.js — manual-review.xlsx"]
+        XL_ENS["_ensureFile() — create xlsx with styled headers if missing"]
+        XL_LCK["proper-lockfile.lock() — multi-process write safety"]
+        XL_RD["readFile() + re-apply column keys\nExcelJS loses column keys when written to disk"]
+        XL_ROW["addRow() per user — email, username, names, failureReason, timestamp"]
+        XL_SWP["Write to .tmp then retry unlinkSync up to 5x every 3s\nhandles EBUSY when Excel has file open\nrename .tmp to manual-review.xlsx"]
+        XL_SET["recordManualReviewUsers(emails) — write to manual:users SET"]
+    end
+
+    subgraph GAPREC["Gap Recovery — index.js functions"]
+        GR_COMP{"gap = totalUsers\nminus imported minus manual"}
+        GR_SCAN["requeueGapUsers — load success + manual emails into Sets\nscan source list 500 users per batch\nmapSourceToAuth0 each user\nretryQueue.addBulk — jobId: gap-email (idempotent)"]
+    end
+
+    START --> IDX_PRE
+    IDX_PRE --> A0_TOK
+    IDX_PRE --> IDX_FLUSH_S
+    IDX_FLUSH_S -.->|"1 pop all entries"| CK_PEND
+    IDX_FLUSH_S -->|"2 appendUsers per reason group"| XL_ENS
+    XL_ENS --> XL_LCK --> XL_RD --> XL_ROW --> XL_SWP --> XL_SET --> CK_MAN
+    IDX_FLUSH_S --> IDX_VFLAG
+    IDX_VFLAG -->|"--verify"| IDX_VONLY
+    IDX_VONLY --> GR_COMP
+    GR_COMP -->|"gap = 0"| IDX_DONE
+    GR_COMP -->|"gap > 0"| GR_SCAN
+    GR_SCAN --> BQ_RETRY
+    IDX_VFLAG -->|"normal run"| IDX_DETECT
+    IDX_DETECT --> GR_COMP
+    GR_COMP -->|"gap = 0 or prior queues not empty"| IDX_ORPHAN
+    IDX_ORPHAN --> RD_CHUNK
+    RD_CHUNK -->|"stream source"| RD_STREAM
+    RD_STREAM -->|"each record"| RD_MAP
+    RD_MAP -->|"mapped user"| RD_CHUNK
+    RD_CHUNK -->|"username too long"| CK_PEND
+    RD_CHUNK -->|"bulkIndexUsersByEmail"| CK_EIDX
+    RD_CHUNK -->|"chunk files created"| IDX_ENQUEUE
+    IDX_ENQUEUE --> BQ_IMP
+    BQ_IMP --> IW_SLOT
+    IW_SLOT -->|"reads slot count"| CK_SLOTS
+    IW_SLOT -->|"slot free"| IW_POST
+    IW_POST --> A0_CREATE
+    A0_CREATE -->|"auth0Job.id returned"| IW_TRACK
+    IW_TRACK --> CK_SLOTS
+    IW_TRACK --> IW_POLL
+    IW_POLL --> BQ_STAT
+    BQ_STAT --> SW_FETCH
+    SW_FETCH --> A0_STAT
+    A0_STAT --> SW_RUN
+    SW_RUN -->|"yes — re-poll"| SW_REQUEUE
+    SW_REQUEUE --> BQ_STAT
+    SW_RUN -->|"completed"| SW_DONE
+    SW_DONE --> CK_SLOTS
+    SW_DONE --> SW_IDX
+    SW_IDX -->|"HMGET fallback"| CK_EIDX
+    SW_IDX --> SW_ERRS
+    SW_ERRS --> A0_ERRS
+    A0_ERRS --> SW_CLASS
+    SW_CLASS -->|"ALREADY_EXISTS DUPLICATED_USER"| SW_EXIST
+    SW_EXIST --> CK_SUC
+    SW_EXIST --> CK_PEND
+    SW_CLASS -->|"ONE_OF_MISSING NON_UNIQUE"| SW_DMR
+    SW_DMR --> CK_PEND
+    SW_CLASS -->|"recoverable failure"| SW_RETRY
+    SW_RETRY --> BQ_RETRY
+    SW_CLASS -->|"success users in chunk"| SW_SUCC
+    SW_SUCC --> CK_SUC
+    BQ_RETRY --> RW_UNREC
+    RW_UNREC -->|"yes — permanent failure"| CK_PEND
+    RW_UNREC -->|"no"| RW_CNT
+    RW_CNT --> RW_MAX
+    RW_MAX -->|"yes — exhausted"| CK_PEND
+    RW_MAX -->|"no"| RW_STAGE
+    RW_STAGE --> CK_STAGE
+    RW_STAGE --> RW_FULL
+    RW_FULL -->|"yes"| RW_FLUSH
+    RW_FLUSH --> BW_POP
+    BW_POP --> BW_RACE
+    BW_RACE -->|"yes — concurrent race lost"| BW_BACK
+    BW_BACK --> CK_STAGE
+    BW_RACE -->|"no — this worker owns batch"| BW_DEDUP
+    BW_DEDUP --> BW_FLT --> CK_INFLT
+    BW_FLT --> BW_FILE
+    BW_FILE --> BW_SLOT
+    BW_SLOT -->|"reads slot count"| CK_SLOTS
+    BW_SLOT -->|"slot free"| BW_POST
+    BW_POST --> A0_CREATE
+    BW_POST --> BW_QPOLL
+    BW_QPOLL --> BQ_STAT
+    BW_QPOLL --> BW_DEC
+    BW_DEC --> CK_INFLT
+    CK_PEND -.->|"flushed at startup and completion"| IDX_FLUSH_S
+    IDX_ENQUEUE --> IDX_WAIT
+    IDX_WAIT -->|"all queues empty, batchInFlight=0, staging=0"| IDX_ONCOMP
+    IDX_ONCOMP -->|"gap > 0 — requeue + wait again"| GR_SCAN
+    IDX_ONCOMP -->|"gap = 0"| IDX_FLUSH_F
+    IDX_FLUSH_F -->|"appendUsers per reason group"| XL_ENS
+    IDX_FLUSH_F --> IDX_DONE

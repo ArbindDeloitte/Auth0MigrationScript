@@ -68,7 +68,9 @@ function mapSourceToAuth0(record) {
   if (lastName) user.family_name = lastName;
   if (fullName) user.name = fullName;
 
-  // UID is stored as Auth0 username (must be unique per connection)
+  // UID is stored as Auth0 username (must be unique per connection).
+  // Oversized usernames are not truncated here — createChunksFromRedis detects them,
+  // skips the user from the import chunk, and routes them to manual review.
   if (record.uid) user.username = String(record.uid);
 
   // password_hash: map to Auth0 custom_password_hash.
@@ -85,10 +87,10 @@ function mapSourceToAuth0(record) {
     user.user_metadata = { language: record.language_preference };
   }
 
-  // requireEmailChange flagged users get it recorded in app_metadata
-  if (record.requireEmailChange === true) {
-    user.app_metadata = { requireEmailChange: true };
-  }
+  user.app_metadata = {
+    duplicateEmail: record.requireEmailChange === true,
+    emailChanged:   false,
+  };
 
   return user;
 }
@@ -179,7 +181,12 @@ async function createChunksFromRedis(chunksDir) {
 
   if (!fs.existsSync(chunksDir)) fs.mkdirSync(chunksDir, { recursive: true });
 
+  const failedUserService = require('./failedUserService');
+  const checkpointService = require('./checkpointService');
+
   const chunks = [];
+  const invalidUsernameUsers = [];
+  const allValidUsers = [];         // accumulate for Redis email index
   let currentBatch = [];
   let currentSizeBytes = 2; // JSON array brackets
   let chunkIndex = 0;
@@ -202,6 +209,19 @@ async function createChunksFromRedis(chunksDir) {
   };
 
   for await (const user of instance.streamUsers()) {
+    if (user.username && user.username.length > config.migration.usernameMaxLength) {
+      logger.warn('Username exceeds max length — user skipped from chunk, routed to manual review', {
+        email: user.email,
+        username: user.username,
+        length: user.username.length,
+        maxLength: config.migration.usernameMaxLength,
+      });
+      invalidUsernameUsers.push(user);
+      continue;
+    }
+
+    allValidUsers.push(user);
+
     const userJson = JSON.stringify(user);
     const addedBytes = Buffer.byteLength(
       currentBatch.length > 0 ? ',' + userJson : userJson,
@@ -217,7 +237,28 @@ async function createChunksFromRedis(chunksDir) {
   }
 
   flushChunk();
-  logger.info('Chunking from Redis complete', { totalChunks: chunks.length });
+
+  // Build the email → full-user index in Redis (same as excelService does for
+  // Excel-source runs). statusProcessor uses this as a fallback when a chunk
+  // file is unavailable, so full user data (including custom_password_hash) is
+  // always retrievable by email.
+  await checkpointService.bulkIndexUsersByEmail(allValidUsers);
+
+  if (invalidUsernameUsers.length > 0) {
+    await failedUserService.appendUsers(
+      invalidUsernameUsers,
+      `Username exceeds Auth0 ${config.migration.usernameMaxLength}-character limit — must be fixed in source data`
+    );
+    logger.warn('Oversized-username users written to manual review', {
+      count: invalidUsernameUsers.length,
+      maxLength: config.migration.usernameMaxLength,
+    });
+  }
+
+  logger.info('Chunking from Redis complete', {
+    totalChunks: chunks.length,
+    skippedInvalidUsername: invalidUsernameUsers.length,
+  });
   return chunks;
 }
 

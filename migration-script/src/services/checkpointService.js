@@ -17,7 +17,15 @@ const KEY = {
   // decremented after its status-poll job is queued. Prevents the completion
   // check from declaring "done" during the narrow window between staging pop
   // and statusQueue.add.
-  batchInFlight:    'migration:retry:batch:inflight',
+  batchInFlight:       'migration:retry:batch:inflight',
+  // Durable write-buffer for manual-review Excel writes.
+  // Workers push {user, reason} here instantly (Redis RPUSH) instead of writing
+  // to Excel inline. Flushed to Excel in one batch at startup and at completion.
+  manualReviewPending: 'migration:manual-review:pending',
+  // Email → full user JSON (HASH). Written once at chunk-creation time so
+  // statusProcessor can look up the original user (with custom_password_hash)
+  // when a chunk file is unavailable after a crash or mid-run restart.
+  sourceEmailIndex: 'migration:source:email:index',
 };
 
 // SADD chunk size: ioredis (and Redis 5.x) support large vararg commands but we
@@ -211,6 +219,64 @@ class CheckpointService {
     return this.redis.smembers(KEY.manualUsers);
   }
 
+  // ── Manual-review write buffer ───────────────────────────────────────────
+  // Push users+reason to the durable pending list. Also immediately records
+  // emails in the Redis SET so gap detection is always accurate regardless of
+  // when the Excel flush happens.
+  async pushToManualReviewPending(users, reason) {
+    if (!users || users.length === 0) return;
+    const pipe = this.redis.pipeline();
+    for (const user of users) {
+      pipe.rpush(KEY.manualReviewPending, JSON.stringify({ user, reason }));
+    }
+    await pipe.exec();
+    const emails = users.map(u => (u.email || '').toLowerCase()).filter(Boolean);
+    if (emails.length > 0) {
+      await this.recordManualReviewUsers(emails);
+    }
+  }
+
+  // Atomically reads and clears the pending list. Returns [{user, reason}, ...].
+  // MULTI/EXEC makes the LRANGE+DEL atomic so a crash between the two commands
+  // cannot leave entries in Redis that will cause duplicate Excel rows on restart.
+  async popAllManualReviewPending() {
+    const pipe = this.redis.multi();
+    pipe.lrange(KEY.manualReviewPending, 0, -1);
+    pipe.del(KEY.manualReviewPending);
+    const results = await pipe.exec();
+    if (results[0][0]) throw results[0][0];
+    const items = results[0][1] || [];
+    return items.map(item => {
+      try { return JSON.parse(item); } catch { return null; }
+    }).filter(Boolean);
+  }
+
+  // ── Source email index ───────────────────────────────────────────────────
+  // Written at chunk-creation time (excelService / redisDataService) so every
+  // user's full object (including custom_password_hash) is retrievable by email
+  // even if the chunk file has been deleted or is unreadable.
+  async bulkIndexUsersByEmail(users) {
+    if (!users || users.length === 0) return;
+    const pipe = this.redis.pipeline();
+    for (const user of users) {
+      const email = (user.email || '').toLowerCase();
+      if (email) pipe.hset(KEY.sourceEmailIndex, email, JSON.stringify(user));
+    }
+    await pipe.exec();
+  }
+
+  // Returns the full user objects for the given emails, in the same order.
+  // Null entries mean the email was not found in the index.
+  async getIndexedUsersByEmails(emails) {
+    if (!emails || emails.length === 0) return [];
+    const lower = emails.map(e => e.toLowerCase());
+    const raw = await this.redis.hmget(KEY.sourceEmailIndex, ...lower);
+    return raw.map(v => {
+      if (!v) return null;
+      try { return JSON.parse(v); } catch { return null; }
+    });
+  }
+
   // ── Active-slot reset (retry-only restart path) ──────────────────────────
   async resetActiveAuth0Jobs() {
     await this.redis.del(KEY.activeAuth0Jobs);
@@ -258,6 +324,8 @@ class CheckpointService {
     pipe.del(KEY.successUsers);
     pipe.del(KEY.manualUsers);
     pipe.del(KEY.batchInFlight);
+    pipe.del(KEY.manualReviewPending);
+    pipe.del(KEY.sourceEmailIndex);
     if (retryKeys.length > 0) pipe.del(...retryKeys);
     await pipe.exec();
     logger.info('Checkpoint reset', { retryKeysCleared: retryKeys.length });
