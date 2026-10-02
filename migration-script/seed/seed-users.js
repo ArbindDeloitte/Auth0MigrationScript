@@ -5,6 +5,8 @@
  * Run from the migration-script directory: node seed/seed-users.js
  */
 
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+
 const Redis = require('ioredis');
 const crypto = require('crypto');
 
@@ -76,7 +78,7 @@ function makeUser(index) {
 }
 
 async function main() {
-  const redis = new Redis({ host: REDIS_HOST, port: REDIS_PORT, maxRetriesPerRequest: null });
+  const redis = new Redis({ host: REDIS_HOST, port: REDIS_PORT, password: process.env.REDIS_PASSWORD || undefined, maxRetriesPerRequest: null });
   console.log(`\nConnecting to Redis ${REDIS_HOST}:${REDIS_PORT}...`);
 
   const before = await redis.llen(SOURCE_KEY);

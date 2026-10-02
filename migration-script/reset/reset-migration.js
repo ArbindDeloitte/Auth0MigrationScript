@@ -10,6 +10,8 @@
  *   node reset/reset-migration.js
  */
 
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+
 const fs   = require('fs');
 const path = require('path');
 const Redis = require('ioredis');
@@ -30,6 +32,9 @@ const CHECKPOINT_KEYS = [
   'migration:success:users',
   'migration:manual:users',
   'migration:retry:batch:inflight',
+  'migration:manual-review:pending',
+  'migration:source:email:index',
+  'migration:heartbeat',
 ];
 
 const QUEUE_NAMES = ['auth0-import', 'auth0-status', 'auth0-retry-users'];
@@ -61,7 +66,7 @@ async function drainQueue(name, redisOpts) {
 }
 
 async function main() {
-  const redisOpts = { host: REDIS_HOST, port: REDIS_PORT, maxRetriesPerRequest: null };
+  const redisOpts = { host: REDIS_HOST, port: REDIS_PORT, password: process.env.REDIS_PASSWORD || undefined, maxRetriesPerRequest: null };
   const redis = new Redis(redisOpts);
 
   console.log(`\nConnecting to Redis ${REDIS_HOST}:${REDIS_PORT}...`);

@@ -8,6 +8,8 @@
  *   node seed/mark-email-change.js
  */
 
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+
 const Redis = require('ioredis');
 
 const REDIS_HOST = process.env.REDIS_HOST || '127.0.0.1';
@@ -26,7 +28,7 @@ function sampleIndices(total, n) {
 }
 
 async function main() {
-  const redis = new Redis({ host: REDIS_HOST, port: REDIS_PORT, maxRetriesPerRequest: null });
+  const redis = new Redis({ host: REDIS_HOST, port: REDIS_PORT, password: process.env.REDIS_PASSWORD || undefined, maxRetriesPerRequest: null });
 
   console.log(`\nConnecting to Redis ${REDIS_HOST}:${REDIS_PORT}...`);
   const total = await redis.llen(SOURCE_KEY);
